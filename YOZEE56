@@ -35,7 +35,84 @@ MainTab:Button({
 })
 
 -- ==========================================
--- 🎲 Tab 2: Reroll
+-- 🔨 Tab 2: Forge (Safe Memory Scanner)
+-- ==========================================
+local ForgeTab = Window:Tab({ Title = "Forge", Icon = "hammer" })
+
+local memUnits = {}
+local selectedMemUUID = ""
+
+local ForgeDropdown = ForgeTab:Dropdown({
+    Title = "เลือกตัวละครที่จะคราฟต์",
+    Desc = "กดปุ่ม Scan ด้านล่างก่อนเพื่อดึงข้อมูล",
+    Multi = false,
+    Options = {"รอการสแกน..."},
+    Callback = function(val)
+        selectedMemUUID = memUnits[val] or ""
+    end
+})
+
+ForgeTab:Button({
+    Title = "🔍 Scan Memory (ดึงข้อมูลจากแรม)",
+    Desc = "สแกนทะลวงหน่วยความจำแบบปลอดภัย 100%",
+    Icon = "scan",
+    Callback = function()
+        WindUI:Notify({ Title = "System", Content = "กำลังสแกนหน่วยความจำ...", Duration = 1.5, Icon = "refresh-cw" })
+        
+        task.spawn(function()
+            local options = {}
+            table.clear(memUnits)
+            local foundCount = 0
+
+            for _, v in pairs(getgc(true)) do
+                if type(v) == "table" then
+                    pcall(function()
+                        if rawget(v, "Inventory") and type(rawget(v, "Inventory")) == "table" and rawget(rawget(v, "Inventory"), "Units") then
+                            for uid, unitData in pairs(v.Inventory.Units) do
+                                local name = tostring(unitData.Name)
+                                local isLocked = rawget(unitData, "Locked") and " [🔒]" or ""
+                                local display = name .. isLocked .. " | ID: " .. string.sub(tostring(uid), 1, 6)
+                                
+                                memUnits[display] = uid
+                                table.insert(options, display)
+                                foundCount = foundCount + 1
+                            end
+                        end
+                    end)
+                end
+            end
+
+            if foundCount > 0 then
+                table.sort(options)
+                -- แก้ไขเป็น Refresh ตามระบบของ WindUI / Rayfield
+                pcall(function()
+                    ForgeDropdown:Refresh(options, true)
+                end)
+                WindUI:Notify({ Title = "Memory Scan", Content = "สำเร็จ! พบ " .. foundCount .. " ยูนิต", Duration = 3, Icon = "check" })
+            else
+                WindUI:Notify({ Title = "Error", Content = "ไม่พบข้อมูล! ลองเปิดหน้า Units ในเกมทิ้งไว้แล้วกดสแกนใหม่", Duration = 4, Icon = "x" })
+            end
+        end)
+    end
+})
+
+ForgeTab:Button({
+    Title = "เริ่มการคราฟต์ (Forge 5x)",
+    Desc = "ส่งคำสั่งคราฟต์ใส่ UUID ที่เลือกจาก Memory",
+    Icon = "check",
+    Callback = function()
+        if selectedMemUUID == "" then
+            WindUI:Notify({ Title = "Error", Content = "กรุณาสแกนและเลือกยูนิตก่อน!", Duration = 3, Icon = "x" })
+            return
+        end
+        local remote = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
+        remote:FireServer({{ "General", "PassivePunks", "Forge", selectedMemUUID, { { Name = "Wood Katana", Amount = 10 }, { Name = "Diamond", Amount = 6 } }, n = 5 }, "\x02"})
+        WindUI:Notify({ Title = "Forge Success", Content = "ส่งคำสั่งคราฟต์เรียบร้อย!", Duration = 3, Icon = "check" })
+    end
+})
+
+-- ==========================================
+-- 🎲 Tab 3: Reroll
 -- ==========================================
 local RerollTab = Window:Tab({ Title = "Reroll", Icon = "dices" })
 
@@ -60,7 +137,7 @@ local function CreateAutoRoll(title, typeName, nValue)
             end
         end
     })
-    return function() toggleEnabled = false end -- ส่งคืนฟังก์ชันสำหรับปิดตอน Unload
+    return function() toggleEnabled = false end
 end
 
 local stopHaki = CreateAutoRoll("Auto Roll Haki", "Haki", 5)
@@ -71,7 +148,7 @@ local stopDragon = CreateAutoRoll("Auto Roll Dragon Power", "Dragon Power", 5)
 local stopSlime = CreateAutoRoll("Auto Roll Slime Power", "Slime Power", 5)
 
 -- ==========================================
--- 🎰 Tab 3: Spin
+-- 🎰 Tab 4: Spin
 -- ==========================================
 local SpinTab = Window:Tab({ Title = "Spin", Icon = "rotate-cw" })
 local autoSpinDragonWishEnabled = false
@@ -93,18 +170,16 @@ SpinTab:Toggle({
 })
 
 -- ==========================================
--- 📦 Tab 4: Misc (Smart Time Rewards)
+-- 📦 Tab 5: Misc (Smart Time Rewards)
 -- ==========================================
 local MiscTab = Window:Tab({ Title = "Misc", Icon = "box" })
 
--- ⏱️ จอมอนิเตอร์เช็คเวลา
 local TimeMonitor = MiscTab:Button({
     Title = "Next Reward: Loading...",
     Desc = "",
     Icon = "clock"
 })
 
--- ลูปอัปเดตเวลาบนหน้าต่าง UI
 task.spawn(function()
     while task.wait(1) do
         pcall(function()
@@ -127,27 +202,26 @@ task.spawn(function()
                 local diff = reqTime - timePlayed
                 if diff <= 0 then
                     TimeMonitor:SetTitle("Next Reward (" .. nextIndex .. "): READY TO CLAIM!")
-                    TimeMonitor:SetDesc("พร้อมละ")
+                    TimeMonitor:SetDesc("กล่องพร้อมรับแล้ว!")
                 else
                     local h = math.floor(diff / 3600)
                     local m = math.floor((diff % 3600) / 60)
                     local s = math.floor(diff % 60)
                     TimeMonitor:SetTitle(string.format("Next Reward (%d): %02dh %02dm %02ds", nextIndex, h, m, s))
-                    TimeMonitor:SetDesc("" .. math.floor(timePlayed) .. " ")
+                    TimeMonitor:SetDesc("เวลาออนไลน์สะสม: " .. math.floor(timePlayed) .. " วินาที")
                 end
             else
                 TimeMonitor:SetTitle("Time Rewards: All Claimed!")
-                TimeMonitor:SetDesc("รับครลละไอสัส")
+                TimeMonitor:SetDesc("รับของรางวัลครบ 7")
             end
         end)
     end
 end)
 
--- 🎁 ระบบ Auto Claim (เวอร์ชันแก้ไข: รับเฉพาะกล่องที่พร้อมจริงๆ)
 local autoClaimTimeRewardEnabled = false
 MiscTab:Toggle({
     Title = "Auto Claim Time Rewards",
-    Desc = "รับหัวแม่มึง",
+    Desc = "รับเฉพาะกล่องที่พร้อม",
     Value = false,
     Callback = function(state)
         autoClaimTimeRewardEnabled = state
@@ -160,20 +234,17 @@ MiscTab:Toggle({
                         local claimed = Omni.Data.TimeRewards.Claimed
                         local shared = Omni.Shared.TimeRewards
                         
-                        -- เช็คทีละกล่องอย่างละเอียด
                         for i = 1, 7 do
-                            -- ถ้ายังไม่ได้กดรับ
                             if not claimed[tostring(i)] then
                                 local reqTime = shared[i] and shared[i].Time or math.huge
-                                -- และเวลาถึงกำหนดแล้วจริงๆ
                                 if timePlayed >= reqTime then
                                     remoteEvent:FireServer({{ "General", "TimeRewards", "Claim", i }, "\x02"})
-                                    task.wait(1.5) -- รอเซิร์ฟเวอร์ประมวลผลก่อนกดกล่องถัดไป
+                                    task.wait(1.5)
                                 end
                             end
                         end
                     end)
-                    task.wait(3) -- เช็คซ้ำทุกๆ 3 วินาที
+                    task.wait(3)
                 end
             end)
         end
@@ -181,7 +252,7 @@ MiscTab:Toggle({
 })
 
 -- ==========================================
--- ⚙️ Tab 5: Settings
+-- ⚙️ Tab 6: Settings
 -- ==========================================
 local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" })
 
