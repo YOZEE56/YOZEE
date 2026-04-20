@@ -1,12 +1,15 @@
 -- Load WindUI Library
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
+-- โหลดโมดูลหลักของเกม
+local Omni = require(game:GetService("ReplicatedStorage"):WaitForChild("Omni"))
+
 -- Create Main Window
 local Window = WindUI:CreateWindow({
     Title = "YOZEE Script",
     Icon = "swords", 
     Author = "YOZEE",
-    Size = UDim2.new(0, 500, 0, 400),
+    Size = UDim2.new(0, 500, 0, 480),
     Transparent = true,
     Theme = "Dark",
     ToggleKey = Enum.KeyCode.RightShift
@@ -15,10 +18,7 @@ local Window = WindUI:CreateWindow({
 -- ==========================================
 -- ⚔️ Tab 1: Main Features
 -- ==========================================
-local MainTab = Window:Tab({
-    Title = "Main Features",
-    Icon = "home"
-})
+local MainTab = Window:Tab({ Title = "Main Features", Icon = "home" })
 
 MainTab:Button({
     Title = "Remove Gacha UI",
@@ -26,24 +26,10 @@ MainTab:Button({
     Icon = "trash",
     Callback = function()
         local player = game.Players.LocalPlayer
-        local playerGui = player:WaitForChild("PlayerGui")
-        local gachaAnim = playerGui:FindFirstChild("GachaAnimation")
-
+        local gachaAnim = player:WaitForChild("PlayerGui"):FindFirstChild("GachaAnimation")
         if gachaAnim and gachaAnim:FindFirstChild("Main") then
             gachaAnim.Main:Destroy()
-            WindUI:Notify({
-                Title = "YOZEE Script",
-                Content = "Gacha UI removed!",
-                Duration = 3,
-                Icon = "check"
-            })
-        else
-            WindUI:Notify({
-                Title = "Error",
-                Content = "Gacha UI not found.",
-                Duration = 3,
-                Icon = "x"
-            })
+            WindUI:Notify({ Title = "YOZEE Script", Content = "Gacha UI removed!", Duration = 3, Icon = "check" })
         end
     end
 })
@@ -51,166 +37,55 @@ MainTab:Button({
 -- ==========================================
 -- 🎲 Tab 2: Reroll
 -- ==========================================
-local RerollTab = Window:Tab({
-    Title = "Reroll",
-    Icon = "dices"
-})
+local RerollTab = Window:Tab({ Title = "Reroll", Icon = "dices" })
 
--- Variables to control the auto roll loops
-local autoRollHakiEnabled = false
-local autoRollFruitEnabled = false
-local autoRollSwordEnabled = false
-local autoRollRaceEnabled = false
-local autoRollDragonPowerEnabled = false
-local autoRollSlimePowerEnabled = false
-
-RerollTab:Toggle({
-    Title = "Auto Roll Haki",
-    Desc = "กดสุ่มดิควย",
-    Value = false,
-    Callback = function(state)
-        autoRollHakiEnabled = state
-        
-        if autoRollHakiEnabled then
-            task.spawn(function()
-                local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                while autoRollHakiEnabled do
-                    remoteEvent:FireServer({{"General", "Gacha", "Roll", "Haki", {}, n = 5}, "\x02"})
-                    task.wait(0.5)
-                end
-            end)
+local function CreateAutoRoll(title, typeName, nValue)
+    local toggleEnabled = false
+    RerollTab:Toggle({
+        Title = title, Desc = "กดสุ่มดิควย", Value = false,
+        Callback = function(state)
+            toggleEnabled = state
+            if toggleEnabled then
+                task.spawn(function()
+                    local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
+                    while toggleEnabled do
+                        if title == "Auto Roll Sword" then
+                            remoteEvent:FireServer({{"General", "Banner", "Roll", typeName, n = nValue}, "\x02"})
+                        else
+                            remoteEvent:FireServer({{"General", "Gacha", "Roll", typeName, {}, n = nValue}, "\x02"})
+                        end
+                        task.wait(0.5)
+                    end
+                end)
+            end
         end
-    end
-})
+    })
+    return function() toggleEnabled = false end -- ส่งคืนฟังก์ชันสำหรับปิดตอน Unload
+end
 
-RerollTab:Toggle({
-    Title = "Auto Roll Fruit",
-    Desc = "กดสุ่มดิควย",
-    Value = false,
-    Callback = function(state)
-        autoRollFruitEnabled = state
-        
-        if autoRollFruitEnabled then
-            task.spawn(function()
-                local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                while autoRollFruitEnabled do
-                    remoteEvent:FireServer({{"General", "Gacha", "Roll", "Fruit", {}, n = 5}, "\x02"})
-                    task.wait(0.5)
-                end
-            end)
-        end
-    end
-})
-
-RerollTab:Toggle({
-    Title = "Auto Roll Sword",
-    Desc = "กดสุ่มดิควย",
-    Value = false,
-    Callback = function(state)
-        autoRollSwordEnabled = state
-        
-        if autoRollSwordEnabled then
-            task.spawn(function()
-                local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                while autoRollSwordEnabled do
-                    remoteEvent:FireServer({{"General", "Banner", "Roll", "Swords Banner", n = 4}, "\x02"})
-                    task.wait(0.5)
-                end
-            end)
-        end
-    end
-})
-
-RerollTab:Toggle({
-    Title = "Auto Roll Race",
-    Desc = "กดสุ่มดิควย",
-    Value = false,
-    Callback = function(state)
-        autoRollRaceEnabled = state
-        
-        if autoRollRaceEnabled then
-            task.spawn(function()
-                local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                while autoRollRaceEnabled do
-                    remoteEvent:FireServer({{"General", "Gacha", "Roll", "Race", {}, n = 5}, "\x02"})
-                    task.wait(0.5)
-                end
-            end)
-        end
-    end
-})
-
-RerollTab:Toggle({
-    Title = "Auto Roll Dragon Power",
-    Desc = "กดสุ่มดิควย",
-    Value = false,
-    Callback = function(state)
-        autoRollDragonPowerEnabled = state
-        
-        if autoRollDragonPowerEnabled then
-            task.spawn(function()
-                local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                while autoRollDragonPowerEnabled do
-                    remoteEvent:FireServer({{"General", "Gacha", "Roll", "Dragon Power", {}, n = 5}, "\x02"})
-                    task.wait(0.5)
-                end
-            end)
-        end
-    end
-})
-
-RerollTab:Toggle({
-    Title = "Auto Roll Slime Power",
-    Desc = "กดสุ่มดิควย",
-    Value = false,
-    Callback = function(state)
-        autoRollSlimePowerEnabled = state
-        
-        if autoRollSlimePowerEnabled then
-            task.spawn(function()
-                local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                while autoRollSlimePowerEnabled do
-                    remoteEvent:FireServer({{"General", "Gacha", "Roll", "Slime Power", {}, n = 5}, "\x02"})
-                    task.wait(0.5)
-                end
-            end)
-        end
-    end
-})
+local stopHaki = CreateAutoRoll("Auto Roll Haki", "Haki", 5)
+local stopFruit = CreateAutoRoll("Auto Roll Fruit", "Fruit", 5)
+local stopSword = CreateAutoRoll("Auto Roll Sword", "Swords Banner", 4)
+local stopRace = CreateAutoRoll("Auto Roll Race", "Race", 5)
+local stopDragon = CreateAutoRoll("Auto Roll Dragon Power", "Dragon Power", 5)
+local stopSlime = CreateAutoRoll("Auto Roll Slime Power", "Slime Power", 5)
 
 -- ==========================================
 -- 🎰 Tab 3: Spin
 -- ==========================================
-local SpinTab = Window:Tab({
-    Title = "Spin",
-    Icon = "rotate-cw"
-})
-
+local SpinTab = Window:Tab({ Title = "Spin", Icon = "rotate-cw" })
 local autoSpinDragonWishEnabled = false
 
 SpinTab:Toggle({
-    Title = "Auto Spin Dragon Wish",
-    Desc = "กดสุ่มนะคับ",
-    Value = false,
+    Title = "Auto Spin Dragon Wish", Desc = "กดสุ่มนะคับ", Value = false,
     Callback = function(state)
         autoSpinDragonWishEnabled = state
-        
         if autoSpinDragonWishEnabled then
             task.spawn(function()
                 local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                
                 while autoSpinDragonWishEnabled do
-                    remoteEvent:FireServer({
-                        {
-                            "General",
-                            "Roulette",
-                            "Roll",
-                            "Dragon Wish",
-                            n = 4
-                        },
-                        "\x02"
-                    })
-                    task.wait(0.5) -- หน่วงเวลาป้องกันโดนเตะข้อหาแสปม
+                    remoteEvent:FireServer({{"General", "Roulette", "Roll", "Dragon Wish", n = 4}, "\x02"})
+                    task.wait(0.5)
                 end
             end)
         end
@@ -218,41 +93,111 @@ SpinTab:Toggle({
 })
 
 -- ==========================================
--- ⚙️ Tab 4: Settings
+-- 📦 Tab 4: Misc (Smart Time Rewards)
 -- ==========================================
-local SettingsTab = Window:Tab({
-    Title = "Settings",
-    Icon = "settings"
+local MiscTab = Window:Tab({ Title = "Misc", Icon = "box" })
+
+-- ⏱️ จอมอนิเตอร์เช็คเวลา
+local TimeMonitor = MiscTab:Button({
+    Title = "Next Reward: Loading...",
+    Desc = "",
+    Icon = "clock"
 })
 
+-- ลูปอัปเดตเวลาบนหน้าต่าง UI
+task.spawn(function()
+    while task.wait(1) do
+        pcall(function()
+            local timePlayed = Omni.Data.TimeRewards.TimePlayed
+            local claimed = Omni.Data.TimeRewards.Claimed
+            local shared = Omni.Shared.TimeRewards
+            
+            local nextIndex = nil
+            local reqTime = 0
+            
+            for i = 1, 7 do
+                if not claimed[tostring(i)] then
+                    nextIndex = i
+                    reqTime = shared[i] and shared[i].Time or 0
+                    break
+                end
+            end
+            
+            if nextIndex then
+                local diff = reqTime - timePlayed
+                if diff <= 0 then
+                    TimeMonitor:SetTitle("Next Reward (" .. nextIndex .. "): READY TO CLAIM!")
+                    TimeMonitor:SetDesc("พร้อมละ")
+                else
+                    local h = math.floor(diff / 3600)
+                    local m = math.floor((diff % 3600) / 60)
+                    local s = math.floor(diff % 60)
+                    TimeMonitor:SetTitle(string.format("Next Reward (%d): %02dh %02dm %02ds", nextIndex, h, m, s))
+                    TimeMonitor:SetDesc("" .. math.floor(timePlayed) .. " ")
+                end
+            else
+                TimeMonitor:SetTitle("Time Rewards: All Claimed!")
+                TimeMonitor:SetDesc("รับครลละไอสัส")
+            end
+        end)
+    end
+end)
+
+-- 🎁 ระบบ Auto Claim (เวอร์ชันแก้ไข: รับเฉพาะกล่องที่พร้อมจริงๆ)
+local autoClaimTimeRewardEnabled = false
+MiscTab:Toggle({
+    Title = "Auto Claim Time Rewards",
+    Desc = "รับหัวแม่มึง",
+    Value = false,
+    Callback = function(state)
+        autoClaimTimeRewardEnabled = state
+        if autoClaimTimeRewardEnabled then
+            task.spawn(function()
+                local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
+                while autoClaimTimeRewardEnabled do
+                    pcall(function()
+                        local timePlayed = Omni.Data.TimeRewards.TimePlayed
+                        local claimed = Omni.Data.TimeRewards.Claimed
+                        local shared = Omni.Shared.TimeRewards
+                        
+                        -- เช็คทีละกล่องอย่างละเอียด
+                        for i = 1, 7 do
+                            -- ถ้ายังไม่ได้กดรับ
+                            if not claimed[tostring(i)] then
+                                local reqTime = shared[i] and shared[i].Time or math.huge
+                                -- และเวลาถึงกำหนดแล้วจริงๆ
+                                if timePlayed >= reqTime then
+                                    remoteEvent:FireServer({{ "General", "TimeRewards", "Claim", i }, "\x02"})
+                                    task.wait(1.5) -- รอเซิร์ฟเวอร์ประมวลผลก่อนกดกล่องถัดไป
+                                end
+                            end
+                        end
+                    end)
+                    task.wait(3) -- เช็คซ้ำทุกๆ 3 วินาที
+                end
+            end)
+        end
+    end
+})
+
+-- ==========================================
+-- ⚙️ Tab 5: Settings
+-- ==========================================
+local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" })
+
 SettingsTab:Keybind({
-    Title = "Toggle UI",
-    Desc = "Set your UI toggle bind.",
-    Value = "RightShift",
+    Title = "Toggle UI", Desc = "", Value = "RightShift",
     Callback = function(Key)
         Window:SetToggleKey(Enum.KeyCode[Key])
-        WindUI:Notify({
-            Title = "Settings",
-            Content = "Toggle key set to " .. Key,
-            Duration = 3,
-            Icon = "settings"
-        })
     end
 })
 
 SettingsTab:Button({
-    Title = "Unload UI",
-    Desc = "Complete",
-    Icon = "log-out",
+    Title = "Unload UI", Desc = "", Icon = "log-out",
     Callback = function()
-        -- Stop all loops before unloading to prevent memory leaks or crashes
-        autoRollHakiEnabled = false
-        autoRollFruitEnabled = false
-        autoRollSwordEnabled = false
-        autoRollRaceEnabled = false
-        autoRollDragonPowerEnabled = false
-        autoRollSlimePowerEnabled = false
+        stopHaki(); stopFruit(); stopSword(); stopRace(); stopDragon(); stopSlime()
         autoSpinDragonWishEnabled = false
+        autoClaimTimeRewardEnabled = false
         Window:Destroy()
     end
 })
