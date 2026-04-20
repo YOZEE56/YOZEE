@@ -1,7 +1,7 @@
 -- Load WindUI Library
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua"))()
 
--- โหลดโมดูลหลักของเกม
+-- Load Main Game Module
 local Omni = require(game:GetService("ReplicatedStorage"):WaitForChild("Omni"))
 
 -- Create Main Window
@@ -22,7 +22,7 @@ local MainTab = Window:Tab({ Title = "Main Features", Icon = "home" })
 
 MainTab:Button({
     Title = "Remove Gacha UI",
-    Desc = "ลบกาชา",
+    Desc = "Delete Gacha Animation UI",
     Icon = "trash",
     Callback = function()
         local player = game.Players.LocalPlayer
@@ -35,30 +35,29 @@ MainTab:Button({
 })
 
 -- ==========================================
--- 🔨 Tab 2: Forge (Safe Memory Scanner)
+-- 🔨 Tab 2: Forge (Memory Scan + Button Recipes)
 -- ==========================================
 local ForgeTab = Window:Tab({ Title = "Forge", Icon = "hammer" })
 
 local memUnits = {}
 local selectedMemUUID = ""
 
-local ForgeDropdown = ForgeTab:Dropdown({
-    Title = "เลือกตัวละครที่จะคราฟต์",
-    Desc = "กดปุ่ม Scan ด้านล่างก่อนเพื่อดึงข้อมูล",
+local ForgeUnitDropdown = ForgeTab:Dropdown({
+    Title = "Select Unit to Forge",
+    Desc = "Click Scan Units below first",
     Multi = false,
-    Options = {"รอการสแกน..."},
+    Options = {"Waiting for scan..."},
     Callback = function(val)
         selectedMemUUID = memUnits[val] or ""
     end
 })
 
 ForgeTab:Button({
-    Title = "🔍 Scan Memory (ดึงข้อมูลจากแรม)",
-    Desc = "สแกนทะลวงหน่วยความจำแบบปลอดภัย 100%",
+    Title = "🔍 Scan Units",
+    Desc = "Scan your inventory from memory",
     Icon = "scan",
     Callback = function()
-        WindUI:Notify({ Title = "System", Content = "กำลังสแกนหน่วยความจำ...", Duration = 1.5, Icon = "refresh-cw" })
-        
+        WindUI:Notify({ Title = "System", Content = "Scanning memory...", Duration = 1.5, Icon = "refresh-cw" })
         task.spawn(function()
             local options = {}
             table.clear(memUnits)
@@ -72,7 +71,6 @@ ForgeTab:Button({
                                 local name = tostring(unitData.Name)
                                 local isLocked = rawget(unitData, "Locked") and " [🔒]" or ""
                                 local display = name .. isLocked .. " | ID: " .. string.sub(tostring(uid), 1, 6)
-                                
                                 memUnits[display] = uid
                                 table.insert(options, display)
                                 foundCount = foundCount + 1
@@ -84,32 +82,82 @@ ForgeTab:Button({
 
             if foundCount > 0 then
                 table.sort(options)
-                -- แก้ไขเป็น Refresh ตามระบบของ WindUI / Rayfield
-                pcall(function()
-                    ForgeDropdown:Refresh(options, true)
-                end)
-                WindUI:Notify({ Title = "Memory Scan", Content = "สำเร็จ! พบ " .. foundCount .. " ยูนิต", Duration = 3, Icon = "check" })
+                pcall(function() ForgeUnitDropdown:Refresh(options, true) end)
+                WindUI:Notify({ Title = "Memory Scan", Content = "Success! Found " .. foundCount .. " units", Duration = 3, Icon = "check" })
             else
-                WindUI:Notify({ Title = "Error", Content = "ไม่พบข้อมูล! ลองเปิดหน้า Units ในเกมทิ้งไว้แล้วกดสแกนใหม่", Duration = 4, Icon = "x" })
+                WindUI:Notify({ Title = "Error", Content = "No data found! Open Units UI and try again.", Duration = 4, Icon = "x" })
             end
         end)
     end
 })
 
-ForgeTab:Button({
-    Title = "เริ่มการคราฟต์ (Forge 5x)",
-    Desc = "ส่งคำสั่งคราฟต์ใส่ UUID ที่เลือกจาก Memory",
-    Icon = "check",
-    Callback = function()
-        if selectedMemUUID == "" then
-            WindUI:Notify({ Title = "Error", Content = "กรุณาสแกนและเลือกยูนิตก่อน!", Duration = 3, Icon = "x" })
-            return
+-- Rarity Groups for Recipes
+local rarities = {
+    { name = "Mythical", items = {
+        { title = "Divine Energy Surge", recipe = { { Name = "Wood Katana", Amount = 10 }, { Name = "Diamond", Amount = 6 } } }
+    }},
+    { name = "Legendary", items = {
+        { title = "Sea CaptainWill", recipe = { { Name = "Pirate Flag", Amount = 10 }, { Name = "Boat Rudder", Amount = 10 } } },
+        { title = "Warrior Journey", recipe = { { Name = "Diamond", Amount = 1 }, { Name = "Traveler Backpack", Amount = 1 } } }
+    }},
+    { name = "Epic", items = {
+        { title = "Underworld Curse", recipe = { { Name = "Pirate Skull", Amount = 6 }, { Name = "Wanted Leaflet", Amount = 10 } } },
+        { title = "Wanted Swordsman", recipe = { { Name = "Dark Blade", Amount = 6 }, { Name = "Wanted Leaflet", Amount = 10 } } },
+        { title = "Cursed Guardian", recipe = { { Name = "Wood Shield", Amount = 6 }, { Name = "Pirate Skull", Amount = 10 } } }
+    }},
+    { name = "Rare", items = {
+        { title = "Adventure Spirit", recipe = { { Name = "Traveler Backpack", Amount = 2 } } },
+        { title = "Black King Blade", recipe = { { Name = "Dark Blade", Amount = 2 } } },
+        { title = "Divine Vitality", recipe = { { Name = "Diamond", Amount = 2 } } }
+    }},
+    { name = "Uncommon", items = {
+        { title = "Legendary Bounty", recipe = { { Name = "Wanted Leaflet", Amount = 2 } } },
+        { title = "Pirate Curse", recipe = { { Name = "Pirate Skull", Amount = 2 } } },
+        { title = "Energy Burst", recipe = { { Name = "Wood Katana", Amount = 2 } } }
+    }},
+    { name = "Common", items = {
+        { title = "Pirate Banner", recipe = { { Name = "Pirate Flag", Amount = 2 } } },
+        { title = "Sea Navigator", recipe = { { Name = "Boat Rudder", Amount = 2 } } },
+        { title = "Warrior Guard", recipe = { { Name = "Wood Shield", Amount = 2 } } }
+    }}
+}
+
+-- Generate Recipe Buttons
+for _, rarityGroup in ipairs(rarities) do
+    for _, item in ipairs(rarityGroup.items) do
+        local descStr = ""
+        for i, req in ipairs(item.recipe) do
+            descStr = descStr .. req.Name .. " x" .. req.Amount
+            if i < #item.recipe then descStr = descStr .. ", " end
         end
-        local remote = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-        remote:FireServer({{ "General", "PassivePunks", "Forge", selectedMemUUID, { { Name = "Wood Katana", Amount = 10 }, { Name = "Diamond", Amount = 6 } }, n = 5 }, "\x02"})
-        WindUI:Notify({ Title = "Forge Success", Content = "ส่งคำสั่งคราฟต์เรียบร้อย!", Duration = 3, Icon = "check" })
+        
+        ForgeTab:Button({
+            Title = "[" .. rarityGroup.name .. "] " .. item.title,
+            Desc = "Requires: " .. descStr,
+            Icon = "hammer",
+            Callback = function()
+                if selectedMemUUID == "" then
+                    WindUI:Notify({ Title = "Error", Content = "Please scan and select a unit first!", Duration = 3, Icon = "x" })
+                    return
+                end
+                
+                local remote = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
+                remote:FireServer({
+                    {
+                        "General",
+                        "PassivePunks",
+                        "Forge",
+                        selectedMemUUID,
+                        item.recipe,
+                        n = 5
+                    },
+                    "\x02"
+                })
+                WindUI:Notify({ Title = "Forge Success", Content = "Crafting: " .. item.title, Duration = 3, Icon = "check" })
+            end
+        })
     end
-})
+end
 
 -- ==========================================
 -- 🎲 Tab 3: Reroll
@@ -119,7 +167,7 @@ local RerollTab = Window:Tab({ Title = "Reroll", Icon = "dices" })
 local function CreateAutoRoll(title, typeName, nValue)
     local toggleEnabled = false
     RerollTab:Toggle({
-        Title = title, Desc = "กดสุ่มดิควย", Value = false,
+        Title = title, Desc = "Auto roll this feature", Value = false,
         Callback = function(state)
             toggleEnabled = state
             if toggleEnabled then
@@ -154,7 +202,7 @@ local SpinTab = Window:Tab({ Title = "Spin", Icon = "rotate-cw" })
 local autoSpinDragonWishEnabled = false
 
 SpinTab:Toggle({
-    Title = "Auto Spin Dragon Wish", Desc = "กดสุ่มนะคับ", Value = false,
+    Title = "Auto Spin Dragon Wish", Desc = "Auto spin dragon roulette", Value = false,
     Callback = function(state)
         autoSpinDragonWishEnabled = state
         if autoSpinDragonWishEnabled then
@@ -176,7 +224,7 @@ local MiscTab = Window:Tab({ Title = "Misc", Icon = "box" })
 
 local TimeMonitor = MiscTab:Button({
     Title = "Next Reward: Loading...",
-    Desc = "",
+    Desc = "Fetching data...",
     Icon = "clock"
 })
 
@@ -202,17 +250,17 @@ task.spawn(function()
                 local diff = reqTime - timePlayed
                 if diff <= 0 then
                     TimeMonitor:SetTitle("Next Reward (" .. nextIndex .. "): READY TO CLAIM!")
-                    TimeMonitor:SetDesc("กล่องพร้อมรับแล้ว!")
+                    TimeMonitor:SetDesc("Reward is ready!")
                 else
                     local h = math.floor(diff / 3600)
                     local m = math.floor((diff % 3600) / 60)
                     local s = math.floor(diff % 60)
                     TimeMonitor:SetTitle(string.format("Next Reward (%d): %02dh %02dm %02ds", nextIndex, h, m, s))
-                    TimeMonitor:SetDesc("เวลาออนไลน์สะสม: " .. math.floor(timePlayed) .. " วินาที")
+                    TimeMonitor:SetDesc("Total Playtime: " .. math.floor(timePlayed) .. " seconds")
                 end
             else
                 TimeMonitor:SetTitle("Time Rewards: All Claimed!")
-                TimeMonitor:SetDesc("รับของรางวัลครบ 7")
+                TimeMonitor:SetDesc("All 7 rewards have been claimed!")
             end
         end)
     end
@@ -221,7 +269,7 @@ end)
 local autoClaimTimeRewardEnabled = false
 MiscTab:Toggle({
     Title = "Auto Claim Time Rewards",
-    Desc = "รับเฉพาะกล่องที่พร้อม",
+    Desc = "Automatically claim ready rewards (1-7)",
     Value = false,
     Callback = function(state)
         autoClaimTimeRewardEnabled = state
@@ -257,14 +305,14 @@ MiscTab:Toggle({
 local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" })
 
 SettingsTab:Keybind({
-    Title = "Toggle UI", Desc = "", Value = "RightShift",
+    Title = "Toggle UI", Desc = "Hide or Show UI Menu", Value = "RightShift",
     Callback = function(Key)
         Window:SetToggleKey(Enum.KeyCode[Key])
     end
 })
 
 SettingsTab:Button({
-    Title = "Unload UI", Desc = "", Icon = "log-out",
+    Title = "Unload UI", Desc = "Close script completely", Icon = "log-out",
     Callback = function()
         stopHaki(); stopFruit(); stopSword(); stopRace(); stopDragon(); stopSlime()
         autoSpinDragonWishEnabled = false
