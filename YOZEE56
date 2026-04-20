@@ -22,7 +22,7 @@ local MainTab = Window:Tab({
 
 MainTab:Button({
     Title = "Remove Gacha UI",
-    Desc = "Instantly remove the GachaAnimation from your screen.",
+    Desc = "ลบกาชา",
     Icon = "trash",
     Callback = function()
         local player = game.Players.LocalPlayer
@@ -70,12 +70,13 @@ RerollTab:Toggle({
     Value = false,
     Callback = function(state)
         autoRollHakiEnabled = state
+        
         if autoRollHakiEnabled then
             task.spawn(function()
                 local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
                 while autoRollHakiEnabled do
                     remoteEvent:FireServer({{"General", "Gacha", "Roll", "Haki", {}, n = 5}, "\x02"})
-                    task.wait(0.5) 
+                    task.wait(0.5)
                 end
             end)
         end
@@ -88,6 +89,7 @@ RerollTab:Toggle({
     Value = false,
     Callback = function(state)
         autoRollFruitEnabled = state
+        
         if autoRollFruitEnabled then
             task.spawn(function()
                 local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
@@ -106,6 +108,7 @@ RerollTab:Toggle({
     Value = false,
     Callback = function(state)
         autoRollSwordEnabled = state
+        
         if autoRollSwordEnabled then
             task.spawn(function()
                 local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
@@ -124,6 +127,7 @@ RerollTab:Toggle({
     Value = false,
     Callback = function(state)
         autoRollRaceEnabled = state
+        
         if autoRollRaceEnabled then
             task.spawn(function()
                 local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
@@ -142,6 +146,7 @@ RerollTab:Toggle({
     Value = false,
     Callback = function(state)
         autoRollDragonPowerEnabled = state
+        
         if autoRollDragonPowerEnabled then
             task.spawn(function()
                 local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
@@ -160,6 +165,7 @@ RerollTab:Toggle({
     Value = false,
     Callback = function(state)
         autoRollSlimePowerEnabled = state
+        
         if autoRollSlimePowerEnabled then
             task.spawn(function()
                 local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
@@ -173,43 +179,41 @@ RerollTab:Toggle({
 })
 
 -- ==========================================
--- 🔨 Tab 3: Forge
+-- 🎰 Tab 3: Spin
 -- ==========================================
-local ForgeTab = Window:Tab({
-    Title = "Forge",
-    Icon = "hammer"
+local SpinTab = Window:Tab({
+    Title = "Spin",
+    Icon = "rotate-cw"
 })
 
-ForgeTab:Button({
-    Title = "Craft Luffe",
-    Desc = "คราฟดิควย",
-    Icon = "hammer",
-    Callback = function()
-        local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-        
-        -- ส่งคำสั่งคราฟต์ไปยังเซิร์ฟเวอร์
-        remoteEvent:FireServer({
-            {
-                "General",
-                "PassivePunks",
-                "Forge",
-                "a10685fc-86c6-497c-9af3-29a6d0a2fabf", -- รหัสของ Luffe
-                {
-                    { Name = "Wood Katana", Amount = 10 },
-                    { Name = "Diamond", Amount = 6 }
-                },
-                n = 5
-            },
-            "\x02"
-        })
+local autoSpinDragonWishEnabled = false
 
-        -- แจ้งเตือนเมื่อกดปุ่ม
-        WindUI:Notify({
-            Title = "Forge System",
-            Content = "Crafting Luffe!",
-            Duration = 3,
-            Icon = "check"
-        })
+SpinTab:Toggle({
+    Title = "Auto Spin Dragon Wish",
+    Desc = "กดสุ่มนะคับ",
+    Value = false,
+    Callback = function(state)
+        autoSpinDragonWishEnabled = state
+        
+        if autoSpinDragonWishEnabled then
+            task.spawn(function()
+                local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
+                
+                while autoSpinDragonWishEnabled do
+                    remoteEvent:FireServer({
+                        {
+                            "General",
+                            "Roulette",
+                            "Roll",
+                            "Dragon Wish",
+                            n = 4
+                        },
+                        "\x02"
+                    })
+                    task.wait(0.5) -- หน่วงเวลาป้องกันโดนเตะข้อหาแสปม
+                end
+            end)
+        end
     end
 })
 
@@ -248,6 +252,7 @@ SettingsTab:Button({
         autoRollRaceEnabled = false
         autoRollDragonPowerEnabled = false
         autoRollSlimePowerEnabled = false
+        autoSpinDragonWishEnabled = false
         Window:Destroy()
     end
 })
