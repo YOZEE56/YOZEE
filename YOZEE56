@@ -260,7 +260,7 @@ task.spawn(function()
                 end
             else
                 TimeMonitor:SetTitle("Time Rewards: All Claimed!")
-                TimeMonitor:SetDesc("All 7 rewards have been claimed!")
+                TimeMonitor:SetDesc("All rewards claimed! Waiting for Auto-Reset...")
             end
         end)
     end
@@ -268,8 +268,8 @@ end)
 
 local autoClaimTimeRewardEnabled = false
 MiscTab:Toggle({
-    Title = "Auto Claim Time Rewards",
-    Desc = "Automatically claim ready rewards (1-7)",
+    Title = "Auto Claim & Reset Time Rewards",
+    Desc = "Auto claim (1-7) & Reset when all claimed",
     Value = false,
     Callback = function(state)
         autoClaimTimeRewardEnabled = state
@@ -282,14 +282,31 @@ MiscTab:Toggle({
                         local claimed = Omni.Data.TimeRewards.Claimed
                         local shared = Omni.Shared.TimeRewards
                         
+                        local allClaimed = true
+                        
+                        -- Check and claim 1-7
                         for i = 1, 7 do
                             if not claimed[tostring(i)] then
+                                allClaimed = false -- Found an unclaimed box
                                 local reqTime = shared[i] and shared[i].Time or math.huge
                                 if timePlayed >= reqTime then
                                     remoteEvent:FireServer({{ "General", "TimeRewards", "Claim", i }, "\x02"})
                                     task.wait(1.5)
                                 end
                             end
+                        end
+                        
+                        -- If all 7 are claimed, fire the Reset event
+                        if allClaimed then
+                            remoteEvent:FireServer({
+                                [1] = {
+                                    [1] = "General",
+                                    [2] = "TimeRewards",
+                                    [3] = "Reset",
+                                },
+                                [2] = "\x02",
+                            })
+                            task.wait(2) -- Wait for the server to process the reset
                         end
                     end)
                     task.wait(3)
