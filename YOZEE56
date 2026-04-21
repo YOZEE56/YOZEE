@@ -15,6 +15,13 @@ local Window = WindUI:CreateWindow({
     ToggleKey = Enum.KeyCode.RightShift
 })
 
+-- Fix Config Manager Error
+local ConfigManager = Window.ConfigManager or {}
+local myConfig = nil
+if ConfigManager.CreateConfig then
+    myConfig = ConfigManager:CreateConfig("YOZEE_Settings")
+end
+
 -- ==========================================
 -- ⚔️ Tab 1: Main Features
 -- ==========================================
@@ -29,16 +36,14 @@ MainTab:Button({
         local gachaAnim = player:WaitForChild("PlayerGui"):FindFirstChild("GachaAnimation")
         if gachaAnim and gachaAnim:FindFirstChild("Main") then
             gachaAnim.Main:Destroy()
-            WindUI:Notify({ Title = "YOZEE Script", Content = "Gacha UI removed!", Duration = 3, Icon = "check" })
         end
     end
 })
 
 -- ==========================================
--- 🔨 Tab 2: Forge (Memory Scan + Button Recipes)
+-- 🔨 Tab 2: Forge
 -- ==========================================
 local ForgeTab = Window:Tab({ Title = "Forge", Icon = "hammer" })
-
 local memUnits = {}
 local selectedMemUUID = ""
 
@@ -57,12 +62,10 @@ ForgeTab:Button({
     Desc = "Scan your inventory from memory",
     Icon = "scan",
     Callback = function()
-        WindUI:Notify({ Title = "System", Content = "Scanning memory...", Duration = 1.5, Icon = "refresh-cw" })
         task.spawn(function()
             local options = {}
             table.clear(memUnits)
             local foundCount = 0
-
             for _, v in pairs(getgc(true)) do
                 if type(v) == "table" then
                     pcall(function()
@@ -79,261 +82,191 @@ ForgeTab:Button({
                     end)
                 end
             end
-
             if foundCount > 0 then
                 table.sort(options)
                 pcall(function() ForgeUnitDropdown:Refresh(options, true) end)
-                WindUI:Notify({ Title = "Memory Scan", Content = "Success! Found " .. foundCount .. " units", Duration = 3, Icon = "check" })
-            else
-                WindUI:Notify({ Title = "Error", Content = "No data found! Open Units UI and try again.", Duration = 4, Icon = "x" })
             end
         end)
     end
 })
 
--- Rarity Groups for Recipes
 local rarities = {
-    { name = "Mythical", items = {
-        { title = "Divine Energy Surge", recipe = { { Name = "Wood Katana", Amount = 10 }, { Name = "Diamond", Amount = 6 } } }
-    }},
-    { name = "Legendary", items = {
-        { title = "Sea CaptainWill", recipe = { { Name = "Pirate Flag", Amount = 10 }, { Name = "Boat Rudder", Amount = 10 } } },
-        { title = "Warrior Journey", recipe = { { Name = "Diamond", Amount = 1 }, { Name = "Traveler Backpack", Amount = 1 } } }
-    }},
-    { name = "Epic", items = {
-        { title = "Underworld Curse", recipe = { { Name = "Pirate Skull", Amount = 6 }, { Name = "Wanted Leaflet", Amount = 10 } } },
-        { title = "Wanted Swordsman", recipe = { { Name = "Dark Blade", Amount = 6 }, { Name = "Wanted Leaflet", Amount = 10 } } },
-        { title = "Cursed Guardian", recipe = { { Name = "Wood Shield", Amount = 6 }, { Name = "Pirate Skull", Amount = 10 } } }
-    }},
-    { name = "Rare", items = {
-        { title = "Adventure Spirit", recipe = { { Name = "Traveler Backpack", Amount = 2 } } },
-        { title = "Black King Blade", recipe = { { Name = "Dark Blade", Amount = 2 } } },
-        { title = "Divine Vitality", recipe = { { Name = "Diamond", Amount = 2 } } }
-    }},
-    { name = "Uncommon", items = {
-        { title = "Legendary Bounty", recipe = { { Name = "Wanted Leaflet", Amount = 2 } } },
-        { title = "Pirate Curse", recipe = { { Name = "Pirate Skull", Amount = 2 } } },
-        { title = "Energy Burst", recipe = { { Name = "Wood Katana", Amount = 2 } } }
-    }},
-    { name = "Common", items = {
-        { title = "Pirate Banner", recipe = { { Name = "Pirate Flag", Amount = 2 } } },
-        { title = "Sea Navigator", recipe = { { Name = "Boat Rudder", Amount = 2 } } },
-        { title = "Warrior Guard", recipe = { { Name = "Wood Shield", Amount = 2 } } }
-    }}
+    { name = "Mythical", items = { { title = "Divine Energy Surge", recipe = { { Name = "Wood Katana", Amount = 10 }, { Name = "Diamond", Amount = 6 } } } }},
+    { name = "Legendary", items = { { title = "Sea CaptainWill", recipe = { { Name = "Pirate Flag", Amount = 10 }, { Name = "Boat Rudder", Amount = 10 } } }, { title = "Warrior Journey", recipe = { { Name = "Diamond", Amount = 1 }, { Name = "Traveler Backpack", Amount = 1 } } } }},
+    { name = "Epic", items = { { title = "Underworld Curse", recipe = { { Name = "Pirate Skull", Amount = 6 }, { Name = "Wanted Leaflet", Amount = 10 } } }, { title = "Wanted Swordsman", recipe = { { Name = "Dark Blade", Amount = 6 }, { Name = "Wanted Leaflet", Amount = 10 } } }, { title = "Cursed Guardian", recipe = { { Name = "Wood Shield", Amount = 6 }, { Name = "Pirate Skull", Amount = 10 } } } }}
 }
 
--- Generate Recipe Buttons
 for _, rarityGroup in ipairs(rarities) do
     for _, item in ipairs(rarityGroup.items) do
-        local descStr = ""
-        for i, req in ipairs(item.recipe) do
-            descStr = descStr .. req.Name .. " x" .. req.Amount
-            if i < #item.recipe then descStr = descStr .. ", " end
-        end
-        
         ForgeTab:Button({
             Title = "[" .. rarityGroup.name .. "] " .. item.title,
-            Desc = "Requires: " .. descStr,
+            Desc = "Start Forge (x5)",
             Icon = "hammer",
             Callback = function()
-                if selectedMemUUID == "" then
-                    WindUI:Notify({ Title = "Error", Content = "Please scan and select a unit first!", Duration = 3, Icon = "x" })
-                    return
-                end
-                
+                if selectedMemUUID == "" then return end
                 local remote = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                remote:FireServer({
-                    {
-                        "General",
-                        "PassivePunks",
-                        "Forge",
-                        selectedMemUUID,
-                        item.recipe,
-                        n = 5
-                    },
-                    "\x02"
-                })
-                WindUI:Notify({ Title = "Forge Success", Content = "Crafting: " .. item.title, Duration = 3, Icon = "check" })
+                remote:FireServer({{ "General", "PassivePunks", "Forge", selectedMemUUID, item.recipe, n = 5 }, "\x02"})
             end
         })
     end
 end
 
 -- ==========================================
--- 🎲 Tab 3: Reroll
+-- ⚡ Tab 3: op (Smart Farm Worlds 1-5)
 -- ==========================================
-local RerollTab = Window:Tab({ Title = "Reroll", Icon = "dices" })
+local OpTab = Window:Tab({ Title = "op", Icon = "zap" })
+local opWaitTime = 2
 
-local function CreateAutoRoll(title, typeName, nValue)
-    local toggleEnabled = false
-    RerollTab:Toggle({
-        Title = title, Desc = "Auto roll this feature", Value = false,
+OpTab:Slider({
+    Title = "TP Delay (Seconds)",
+    Desc = "Adjust speed",
+    Step = 0.1,
+    Value = { Min = 0.1, Max = 10, Default = 2 },
+    Callback = function(val) opWaitTime = val end
+})
+
+local worlds = {
+    { name = "op farm world 1", MapName = "Fruits Verse", ZoneIndex = 1, points = { CFrame.new(6062.04102, 797.775452, -827.748047, 0.991731465, -2.29480754e-08, 0.128330514, 2.33321611e-08, 1, -1.48961987e-09, -0.128330514, 4.47153115e-09, 0.991731465), CFrame.new(6166.59717, 797.775452, -798.428284, -0.180892155, -7.37317976e-08, -0.983502924, 6.13338003e-08, 1, -8.62494645e-08, 0.983502924, -7.5923829e-08, -0.180892155), CFrame.new(6058.44922, 798.229858, -757.175476, -0.345307946, -1.14076304e-08, 0.93849437, -3.76742371e-09, 1, 1.07691234e-08, -0.93849437, 1.82976689e-10, -0.345307946), CFrame.new(5929.97461, 810.752197, -636.247559, -0.126288682, 3.33198513e-09, 0.991993546, 2.76954237e-09, 1, -3.00629299e-09, -0.991993546, 2.36770736e-09, -0.126288682), CFrame.new(6763.41699, 822.042847, -999.170288, 0.779669106, 3.96971132e-08, -0.626191735, -4.87878822e-08, 1, 2.64888333e-09, 0.626191735, 2.84853154e-08, 0.779669106) } },
+    { name = "op farm world 2", MapName = "Fruits Verse", ZoneIndex = 2, points = { CFrame.new(11853.6045, -11.6748734, -23103.8105, 0.871204257, -1.20705621e-07, 0.490920752, 8.79264732e-08, 1, 8.98387356e-08, -0.490920752, -3.51029605e-08, 0.871204257), CFrame.new(11786.4346, -11.5901699, -23081.7949, 0.883985102, -1.02836504e-08, 0.467515051, 2.32060149e-08, 1, -2.18819078e-08, -0.467515051, 3.01924423e-08, 0.883985102), CFrame.new(11741.2695, -11.7384644, -23066.1172, -0.506187856, 2.15606359e-08, 0.862423241, 1.80679933e-08, 1, -1.43952965e-08, -0.862423241, 8.29553226e-09, -0.506187856), CFrame.new(11688.5859, -11.3075085, -23094.4629, -0.913963377, 3.11107655e-08, 0.405796647, 7.0598773e-08, 1, 8.23415505e-08, -0.405796647, 1.03905904e-07, -0.913963377), CFrame.new(11638.7793, -9.07274818, -23024.3262, 0.99999547, -4.06551557e-08, 0.00300072576, 4.10019219e-08, 1, -1.15499965e-07, -0.00300072576, 1.15622484e-07, 0.99999547) } },
+    { name = "op farm world 3", MapName = "Dragon Verse", ZoneIndex = 1, points = { CFrame.new(15464.1426, 787.191467, -2635.91504, -0.486916363, -7.72136417e-08, -0.87344861, -1.14453044e-07, 1, -2.45974174e-08, 0.87344861, 8.7991971e-08, -0.486916363), CFrame.new(15460.0889, 787.191467, -2453.448, -0.999920547, -1.2661781e-08, 0.0126044834, -1.25137625e-08, 1, 1.18222507e-08, -0.0126044834, 1.16635821e-08, -0.999920547), CFrame.new(15650.2656, 787.191467, -2649.57935, -0.546930373, -2.51119694e-08, -0.837178111, 2.25142145e-08, 1, -4.47045565e-08, 0.837178111, -4.32986873e-08, -0.546930373), CFrame.new(15664.8535, 787.191467, -2593.08057, -0.940910459, 6.48084075e-09, -0.338655502, 1.08123741e-08, 1, -1.09038103e-08, 0.338655502, -1.39211789e-08, -0.940910459), CFrame.new(15863.3496, 803.952026, -2605.31567, 0.88832128, -4.81868021e-08, -0.459222525, 4.36478693e-08, 1, -2.04987085e-08, 0.459222525, -1.83464632e-09, 0.88832128) } },
+    { name = "op farm world 4", MapName = "Dragon Verse", ZoneIndex = 2, points = { CFrame.new(4689.2124, 788.073914, 5331.17578, 0.998455346, 3.26416449e-09, 0.0555605888, -8.76382078e-09, 1, 9.87412037e-08, -0.0555605888, -9.90756064e-08, 0.998455346), CFrame.new(4642.23438, 788.073914, 5331.34326, -0.252767116, 9.90221771e-09, 0.967527151, 2.02356598e-09, 1, -9.70590541e-09, -0.967527151, -4.95478603e-10, -0.252767116), CFrame.new(4719.84814, 793.074829, 5073.08105, 0.688064277, 4.32891589e-08, -0.725649774, -3.25381073e-08, 1, 2.8802944e-08, 0.725649774, 3.79299347e-09, 0.688064277), CFrame.new(4747.37305, 793.074829, 5020.52734, 0.904871821, 2.65700706e-08, -0.425684184, -1.95319991e-08, 1, 2.08983941e-08, 0.425684184, -1.05959046e-08, 0.904871821), CFrame.new(4341.94238, 795.080139, 4636.07373, 1, -1.56704738e-09, 7.77184832e-15, 1.56704738e-09, 1, -6.60798136e-08, -7.66829769e-08, 6.60798136e-08, 1) } },
+    { name = "op farm world 5", MapName = "Slime Verse", ZoneIndex = 1, points = { CFrame.new(687.276733, 779.915283, -352.038361, -0.96483326, -8.30642293e-08, -0.262862742, -9.43769152e-08, 1, 3.04103907e-08, 0.262862742, 5.41491296e-08, -0.96483326), CFrame.new(694.589233, 779.952087, -326.719391, -0.106957011, 3.4341523e-09, -0.994263649, -7.67315278e-09, 1, 4.27939773e-09, 0.994263649, 8.08684852e-09, -0.106957011), CFrame.new(659.654053, 779.389709, -228.484589, -0.890602529, -2.45537777e-08, 0.454782575, -9.89847226e-09, 1, 3.46059288e-08, -0.454782575, 2.63184745e-08, -0.890602529), CFrame.new(741.459656, 779.389709, -217.555649, -0.217763275, -1.80909332e-08, -0.97600162, 1.83198132e-08, 1, -2.26232366e-08, 0.97600162, -2.28066774e-08, -0.217763275), CFrame.new(693.247559, 741.773132, -412.680481, 1, -7.52749756e-08, -6.08513552e-14, 7.52749756e-08, 1, 9.45976097e-08, 5.37305253e-16, -9.45976097e-08, 1) } }
+}
+
+for _, cfg in ipairs(worlds) do
+    local isEnabled = false
+    local FarmToggle = OpTab:Toggle({
+        Title = cfg.name,
+        Desc = "Check & Farm",
+        Value = false,
         Callback = function(state)
-            toggleEnabled = state
-            if toggleEnabled then
+            isEnabled = state
+            if isEnabled then
                 task.spawn(function()
-                    local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                    while toggleEnabled do
-                        if title == "Auto Roll Sword" then
-                            remoteEvent:FireServer({{"General", "Banner", "Roll", typeName, n = nValue}, "\x02"})
-                        else
-                            remoteEvent:FireServer({{"General", "Gacha", "Roll", typeName, {}, n = nValue}, "\x02"})
+                    local remote = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
+                    while isEnabled do
+                        if Omni.Data.Map ~= cfg.MapName or Omni.Data.Zone ~= cfg.ZoneIndex then
+                            -- Firing Teleport Remote
+                            remote:FireServer({{ "Player", "Teleport", "Teleport", cfg.MapName, cfg.ZoneIndex, n = 5 }, "\x02"})
+                            repeat task.wait(1) until (Omni.Data.Map == cfg.MapName and Omni.Data.Zone == cfg.ZoneIndex) or not isEnabled
                         end
-                        task.wait(0.5)
+                        for _, targetCFrame in ipairs(cfg.points) do
+                            if not isEnabled then break end
+                            if Omni.Data.Map ~= cfg.MapName or Omni.Data.Zone ~= cfg.ZoneIndex then break end
+                            local hrp = game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                            if hrp then hrp.CFrame = targetCFrame end
+                            task.wait(opWaitTime)
+                        end
                     end
                 end)
             end
         end
     })
-    return function() toggleEnabled = false end
+    if myConfig then myConfig:Register("Farm_"..cfg.name:gsub(" ", "_"), FarmToggle) end
 end
 
-local stopHaki = CreateAutoRoll("Auto Roll Haki", "Haki", 5)
-local stopFruit = CreateAutoRoll("Auto Roll Fruit", "Fruit", 5)
-local stopSword = CreateAutoRoll("Auto Roll Sword", "Swords Banner", 4)
-local stopRace = CreateAutoRoll("Auto Roll Race", "Race", 5)
-local stopDragon = CreateAutoRoll("Auto Roll Dragon Power", "Dragon Power", 5)
-local stopSlime = CreateAutoRoll("Auto Roll Slime Power", "Slime Power", 5)
-
 -- ==========================================
--- 🎰 Tab 4: Spin
+-- 🎲 Tab 4: Reroll
 -- ==========================================
-local SpinTab = Window:Tab({ Title = "Spin", Icon = "rotate-cw" })
-local autoSpinDragonWishEnabled = false
-
-SpinTab:Toggle({
-    Title = "Auto Spin Dragon Wish", Desc = "Auto spin dragon roulette", Value = false,
-    Callback = function(state)
-        autoSpinDragonWishEnabled = state
-        if autoSpinDragonWishEnabled then
+local RerollTab = Window:Tab({ Title = "Reroll", Icon = "dices" })
+local function CreateAutoRoll(title, typeName, nValue)
+    local toggleEnabled = false
+    local RollToggle = RerollTab:Toggle({
+        Title = title, Desc = "Auto roll", Value = false,
+        Callback = function(state)
+            toggleEnabled = state
             task.spawn(function()
-                local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                while autoSpinDragonWishEnabled do
-                    remoteEvent:FireServer({{"General", "Roulette", "Roll", "Dragon Wish", n = 4}, "\x02"})
+                local remote = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
+                while toggleEnabled do
+                    if title == "Auto Roll Sword" then remote:FireServer({{"General", "Banner", "Roll", typeName, n = nValue}, "\x02"})
+                    else remote:FireServer({{"General", "Gacha", "Roll", typeName, {}, n = nValue}, "\x02"}) end
                     task.wait(0.5)
                 end
             end)
         end
-    end
-})
+    })
+    if myConfig then myConfig:Register(title:gsub(" ", "_"), RollToggle) end
+end
+CreateAutoRoll("Auto Roll Haki", "Haki", 5)
+CreateAutoRoll("Auto Roll Fruit", "Fruit", 5)
+CreateAutoRoll("Auto Roll Sword", "Swords Banner", 4)
+CreateAutoRoll("Auto Roll Race", "Race", 5)
+CreateAutoRoll("Auto Roll Dragon Power", "Dragon Power", 5)
+CreateAutoRoll("Auto Roll Slime Power", "Slime Power", 5)
 
 -- ==========================================
--- 📦 Tab 5: Misc (Smart Time Rewards)
+-- 🎰 Tab 5: Spin
 -- ==========================================
-local MiscTab = Window:Tab({ Title = "Misc", Icon = "box" })
-
-local TimeMonitor = MiscTab:Button({
-    Title = "Next Reward: Loading...",
-    Desc = "Fetching data...",
-    Icon = "clock"
-})
-
-task.spawn(function()
-    while task.wait(1) do
-        pcall(function()
-            local timePlayed = Omni.Data.TimeRewards.TimePlayed
-            local claimed = Omni.Data.TimeRewards.Claimed
-            local shared = Omni.Shared.TimeRewards
-            
-            local nextIndex = nil
-            local reqTime = 0
-            
-            for i = 1, 7 do
-                if not claimed[tostring(i)] then
-                    nextIndex = i
-                    reqTime = shared[i] and shared[i].Time or 0
-                    break
-                end
-            end
-            
-            if nextIndex then
-                local diff = reqTime - timePlayed
-                if diff <= 0 then
-                    TimeMonitor:SetTitle("Next Reward (" .. nextIndex .. "): READY TO CLAIM!")
-                    TimeMonitor:SetDesc("Reward is ready!")
-                else
-                    local h = math.floor(diff / 3600)
-                    local m = math.floor((diff % 3600) / 60)
-                    local s = math.floor(diff % 60)
-                    TimeMonitor:SetTitle(string.format("Next Reward (%d): %02dh %02dm %02ds", nextIndex, h, m, s))
-                    TimeMonitor:SetDesc("Total Playtime: " .. math.floor(timePlayed) .. " seconds")
-                end
-            else
-                TimeMonitor:SetTitle("Time Rewards: All Claimed!")
-                TimeMonitor:SetDesc("All rewards claimed! Waiting for Auto-Reset...")
+local SpinTab = Window:Tab({ Title = "Spin", Icon = "rotate-cw" })
+local autoSpinEnabled = false
+local SpinToggle = SpinTab:Toggle({
+    Title = "Auto Spin Dragon Wish", Desc = "Auto spin", Value = false,
+    Callback = function(state)
+        autoSpinEnabled = state
+        task.spawn(function()
+            local remote = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
+            while autoSpinEnabled do
+                remote:FireServer({{"General", "Roulette", "Roll", "Dragon Wish", n = 4}, "\x02"})
+                task.wait(0.5)
             end
         end)
     end
-end)
+})
+if myConfig then myConfig:Register("Auto_Spin_Dragon", SpinToggle) end
 
-local autoClaimTimeRewardEnabled = false
-MiscTab:Toggle({
-    Title = "Auto Claim & Reset Time Rewards",
-    Desc = "Auto claim (1-7) & Reset when all claimed",
+-- ==========================================
+-- 📦 Tab 6: Misc (Smart Rewards)
+-- ==========================================
+local MiscTab = Window:Tab({ Title = "Misc", Icon = "box" })
+local autoClaimEnabled = false
+local ClaimToggle = MiscTab:Toggle({
+    Title = "Auto Claim & Reset Rewards",
+    Desc = "Claim 1-7 and Reset",
     Value = false,
     Callback = function(state)
-        autoClaimTimeRewardEnabled = state
-        if autoClaimTimeRewardEnabled then
-            task.spawn(function()
-                local remoteEvent = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
-                while autoClaimTimeRewardEnabled do
-                    pcall(function()
-                        local timePlayed = Omni.Data.TimeRewards.TimePlayed
-                        local claimed = Omni.Data.TimeRewards.Claimed
-                        local shared = Omni.Shared.TimeRewards
-                        
-                        local allClaimed = true
-                        
-                        -- Check and claim 1-7
-                        for i = 1, 7 do
-                            if not claimed[tostring(i)] then
-                                allClaimed = false -- Found an unclaimed box
-                                local reqTime = shared[i] and shared[i].Time or math.huge
-                                if timePlayed >= reqTime then
-                                    remoteEvent:FireServer({{ "General", "TimeRewards", "Claim", i }, "\x02"})
-                                    task.wait(1.5)
-                                end
+        autoClaimEnabled = state
+        task.spawn(function()
+            local remote = game:GetService("ReplicatedStorage"):WaitForChild("BridgeNet"):WaitForChild("dataRemoteEvent")
+            while autoClaimEnabled do
+                pcall(function()
+                    local data = Omni.Data.TimeRewards
+                    local allClaimed = true
+                    for i = 1, 7 do
+                        if not data.Claimed[tostring(i)] then
+                            allClaimed = false
+                            if data.TimePlayed >= Omni.Shared.TimeRewards[i].Time then
+                                remote:FireServer({{ "General", "TimeRewards", "Claim", i }, "\x02"})
+                                task.wait(1.5)
                             end
                         end
-                        
-                        -- If all 7 are claimed, fire the Reset event
-                        if allClaimed then
-                            remoteEvent:FireServer({
-                                [1] = {
-                                    [1] = "General",
-                                    [2] = "TimeRewards",
-                                    [3] = "Reset",
-                                },
-                                [2] = "\x02",
-                            })
-                            task.wait(2) -- Wait for the server to process the reset
-                        end
-                    end)
-                    task.wait(3)
-                end
-            end)
-        end
+                    end
+                    if allClaimed then
+                        remote:FireServer({{[1] = "General", [2] = "TimeRewards", [3] = "Reset"}, "\x02"})
+                        task.wait(2)
+                    end
+                end)
+                task.wait(3)
+            end
+        end)
     end
 })
+if myConfig then myConfig:Register("Auto_Claim_Reset", ClaimToggle) end
 
 -- ==========================================
--- ⚙️ Tab 6: Settings
+-- 💾 Tab 7: Config
+-- ==========================================
+local ConfigTab = Window:Tab({ Title = "Config", Icon = "save" })
+if myConfig then
+    ConfigTab:Button({ Title = "Save Config", Desc = "Save your current settings", Icon = "download", Callback = function() myConfig:Save() end })
+    ConfigTab:Button({ Title = "Load Config", Desc = "Load your saved settings", Icon = "upload", Callback = function() myConfig:Load() end })
+    ConfigTab:Button({ Title = "Delete Config", Desc = "Remove current config file", Icon = "trash", Callback = function() myConfig:Delete() end })
+else
+    ConfigTab:Button({ Title = "Config Error", Desc = "WindUI version mismatch for ConfigManager", Icon = "alert-triangle", Callback = function() end })
+end
+
+-- ==========================================
+-- ⚙️ Tab 8: Settings
 -- ==========================================
 local SettingsTab = Window:Tab({ Title = "Settings", Icon = "settings" })
-
-SettingsTab:Keybind({
-    Title = "Toggle UI", Desc = "Hide or Show UI Menu", Value = "RightShift",
-    Callback = function(Key)
-        Window:SetToggleKey(Enum.KeyCode[Key])
-    end
-})
-
-SettingsTab:Button({
-    Title = "Unload UI", Desc = "Close script completely", Icon = "log-out",
-    Callback = function()
-        stopHaki(); stopFruit(); stopSword(); stopRace(); stopDragon(); stopSlime()
-        autoSpinDragonWishEnabled = false
-        autoClaimTimeRewardEnabled = false
-        Window:Destroy()
-    end
-})
+SettingsTab:Keybind({ Title = "Toggle UI", Desc = "RightShift to Hide/Show", Value = "RightShift", Callback = function(Key) Window:SetToggleKey(Enum.KeyCode[Key]) end })
+SettingsTab:Button({ Title = "Unload UI", Desc = "Close script", Icon = "log-out", Callback = function() autoClaimEnabled = false autoSpinEnabled = false Window:Destroy() end })
