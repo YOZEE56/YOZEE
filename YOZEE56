@@ -8,7 +8,7 @@ local Omni = require(game:GetService("ReplicatedStorage"):WaitForChild("Omni"))
 
 local Window = Fluent:CreateWindow({
     Title = "YOZEE Script",
-    SubTitle = "Fluent Edition (Ultimate)",
+    SubTitle = "YUZEE Script",
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 520),
     Acrylic = true,
