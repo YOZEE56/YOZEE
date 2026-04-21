@@ -193,6 +193,7 @@ AddRoll("Auto Roll Sword", "Swords Banner", 4, "Banner")
 AddRoll("Auto Roll Dragon Power", "Dragon Power", 5)
 AddRoll("Auto Roll Slime Power", "Slime Power", 5)
 AddRoll("Auto Spin Dragon Wish", "Dragon Wish", 4, "Roulette")
+AddRoll("Auto Roll Primordial Demon", "Primordial Demon", 5)
 
 -- ==========================================
 -- ⚙️ Misc & Settings
