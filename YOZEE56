@@ -12,7 +12,7 @@ end)
 
 local Window = Fluent:CreateWindow({
     Title = "YOZEE Script",
-    SubTitle = "YUZEE Scrip", 
+    SubTitle = "YUZEE Script", 
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 520),
     Acrylic = true,
@@ -104,7 +104,7 @@ for _, forge in ipairs(forgeItems) do
 end
 
 -- ==========================================
--- ⚡ Tab: op (Farm Speed Slider Fixed)
+-- ⚡ Tab: op (World 1-5 ปรับให้เหมือน World 6)
 -- ==========================================
 Tabs.OpFarm:AddSection("Farm Settings")
 local opWaitTime = 2
@@ -125,7 +125,13 @@ local worlds = {
     { name = "world 3", MapName = "Dragon Verse", ZoneIndex = 1, points = { CFrame.new(15464, 787, -2635), CFrame.new(15460, 787, -2453) } },
     { name = "world 4", MapName = "Dragon Verse", ZoneIndex = 2, points = { CFrame.new(4689, 788, 5331), CFrame.new(4642, 788, 5331) } },
     { name = "world 5", MapName = "Slime Verse", ZoneIndex = 1, points = { CFrame.new(687, 779, -352), CFrame.new(694, 779, -326) } },
-    { name = "world 6", MapName = "Slime Verse", ZoneIndex = 2, points = { CFrame.new(411.280, 778.901, -3802.600), CFrame.new(395.062, 778.901, -3624.376), CFrame.new(423.885, 778.901, -3560.519), CFrame.new(264.136, 778.901, -3707.062), CFrame.new(572.512, 753.449, -3528.464) } }
+    { name = "world 6", MapName = "Slime Verse", ZoneIndex = 2, points = { 
+        CFrame.new(411.280, 778.901, -3802.600), 
+        CFrame.new(395.062, 778.901, -3624.376), 
+        CFrame.new(423.885, 778.901, -3560.519), 
+        CFrame.new(264.136, 778.901, -3707.062), 
+        CFrame.new(572.512, 753.449, -3528.464) 
+    } }
 }
 
 for _, cfg in ipairs(worlds) do
@@ -134,18 +140,27 @@ for _, cfg in ipairs(worlds) do
         task.spawn(function()
             local remote = game:GetService("ReplicatedStorage").BridgeNet.dataRemoteEvent
             while T.Value do
-                local currentMode = Omni and Omni.Data and Omni.Data.Mode or ""
-                if currentMode == "Tempest Invasion" then task.wait(2)
+                local currentMode = (Omni and Omni.Data and Omni.Data.Mode) or ""
+                
+                -- ตรรกะเหมือน World 6: ถ้าอยู่ใน Raid (Tempest Invasion) ให้หยุดทำงาน OP Farm
+                if currentMode == "Tempest Invasion" then 
+                    task.wait(2) 
                 else
+                    -- ถ้าไม่ได้อยู่ใน Raid ให้เช็คว่าอยู่แมพที่ถูกต้องไหม ถ้าไม่ให้วาร์ปไป
                     if Omni and (Omni.Data.Map ~= cfg.MapName or Omni.Data.Zone ~= cfg.ZoneIndex) then
                         remote:FireServer({{ "Player", "Teleport", "Teleport", cfg.MapName, cfg.ZoneIndex, n = 5 }, "\x02"})
-                        repeat task.wait(1) until (Omni.Data.Map == cfg.MapName and Omni.Data.Zone == cfg.ZoneIndex) or not T.Value
+                        repeat task.wait(1) until (Omni.Data.Map == cfg.MapName and Omni.Data.Zone == cfg.ZoneIndex) or not T.Value or (Omni.Data.Mode == "Tempest Invasion")
                         task.wait(2)
                     end
+                    
+                    -- วนลูปฟาร์มตามจุดที่กำหนด (ทำงานเหมือน World 6)
                     for _, target in ipairs(cfg.points) do
+                        -- เช็คระหว่างลูปด้วยว่า Raid เริ่มหรือยัง หรือปิด Toggle ไปหรือยัง
                         if not T.Value or (Omni and Omni.Data.Mode == "Tempest Invasion") or (Omni and Omni.Data.Map ~= cfg.MapName) then break end
-                        local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                        if hrp and game.Players.LocalPlayer.Character.Humanoid.Health > 0 then
+                        
+                        local char = game.Players.LocalPlayer.Character
+                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                        if hrp and char.Humanoid.Health > 0 then
                             hrp.CFrame = target
                             task.wait(opWaitTime)
                         end
