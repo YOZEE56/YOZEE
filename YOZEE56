@@ -1,4 +1,4 @@
--- [[ YUZEE Script v12.0 - All Functions Preserved + World 6 Updated ]] --
+-- [[ YUZEE Script v25.0 - Speed Slider Fix & Full Restoration ]] --
 
 local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
 local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
@@ -12,7 +12,7 @@ end)
 
 local Window = Fluent:CreateWindow({
     Title = "YOZEE Script",
-    SubTitle = "YUZEE Script (Ultimate v12.0)", 
+    SubTitle = "YUZEE Scrip", 
     TabWidth = 160,
     Size = UDim2.fromOffset(580, 520),
     Acrylic = true,
@@ -28,12 +28,16 @@ local Tabs = {
     Forge = Window:AddTab({ Title = "Forge", Icon = "hammer" }),
     OpFarm = Window:AddTab({ Title = "op", Icon = "zap" }),
     Reroll = Window:AddTab({ Title = "Reroll", Icon = "refresh-cw" }),
+    Raid = Window:AddTab({ Title = "Raid", Icon = "swords" }),
+    Items = Window:AddTab({ Title = "Items", Icon = "package" }),
     Misc = Window:AddTab({ Title = "Misc", Icon = "box" }),
     Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
 }
 
+local AutoFarmRaid = { Value = false }
+
 -- ==========================================
--- ⚔️ Tab: Main
+-- ⚔️ Tab: Main (Optimization)
 -- ==========================================
 Tabs.Main:AddButton({
     Title = "Remove Gacha UI",
@@ -43,12 +47,13 @@ Tabs.Main:AddButton({
         local gachaAnim = player:WaitForChild("PlayerGui"):FindFirstChild("GachaAnimation")
         if gachaAnim and gachaAnim:FindFirstChild("Main") then
             gachaAnim.Main:Destroy()
+            Fluent:Notify({ Title = "Success", Content = "Gacha UI Removed!", Duration = 2 })
         end
     end
 })
 
 -- ==========================================
--- 🔨 Tab: Forge (Scan + Status + Recipes)
+-- 🔨 Tab: Forge (Full Restoration)
 -- ==========================================
 local memUnits, unitLockStatus, selectedMemUUID = {}, {}, ""
 local StatusLabel = Tabs.Forge:AddParagraph({ Title = "Selected Unit Status", Content = "Please scan and select a unit" })
@@ -99,27 +104,28 @@ for _, forge in ipairs(forgeItems) do
 end
 
 -- ==========================================
--- ⚡ Tab: op (Smart Farm Worlds 1-6)
+-- ⚡ Tab: op (Farm Speed Slider Fixed)
 -- ==========================================
+Tabs.OpFarm:AddSection("Farm Settings")
 local opWaitTime = 2
-Tabs.OpFarm:AddSlider("TPSlider", { Title = "TP Delay", Default = 2, Min = 0.5, Max = 10, Rounding = 1, Callback = function(V) opWaitTime = V end })
+Tabs.OpFarm:AddSlider("FarmSpeedSlider", { 
+    Title = "Farm Speed (Delay)", 
+    Description = "Lower is faster, Higher is safer",
+    Default = 2, 
+    Min = 0.5, 
+    Max = 10, 
+    Rounding = 1, 
+    Callback = function(V) opWaitTime = V end 
+})
 
+Tabs.OpFarm:AddSection("World Farm")
 local worlds = {
     { name = "world 1", MapName = "Fruits Verse", ZoneIndex = 1, points = { CFrame.new(6062, 797, -827), CFrame.new(6166, 797, -798) } },
     { name = "world 2", MapName = "Fruits Verse", ZoneIndex = 2, points = { CFrame.new(11853, -11, -23103), CFrame.new(11786, -11, -23081) } },
     { name = "world 3", MapName = "Dragon Verse", ZoneIndex = 1, points = { CFrame.new(15464, 787, -2635), CFrame.new(15460, 787, -2453) } },
     { name = "world 4", MapName = "Dragon Verse", ZoneIndex = 2, points = { CFrame.new(4689, 788, 5331), CFrame.new(4642, 788, 5331) } },
-    { name = "world 5", MapName = "Slime Verse", ZoneIndex = 1, points = { CFrame.new(687.2, 779.9, -352), CFrame.new(694.5, 779.9, -326) } },
-    { 
-        name = "world 6", MapName = "Slime Verse", ZoneIndex = 2, 
-        points = { -- อัปเดตพิกัดใหม่ 5 จุดตามคำขอ
-            CFrame.new(411.280792, 778.901245, -3802.60059, 0.291626573, 4.46836843e-08, -0.95653224, 6.69337741e-09, 1, 4.87549165e-08, 0.95653224, -2.06206607e-08, 0.291626573),
-            CFrame.new(395.062531, 778.901184, -3624.37695, -0.907810152, -3.37064314e-08, 0.41938135, -3.20882094e-08, 1, 1.09123333e-08, -0.41938135, -3.55087049e-09, -0.907810152),
-            CFrame.new(423.885803, 778.901184, -3560.51904, -0.7605443, -9.37343927e-08, -0.649286091, -8.89070577e-08, 1, -4.02236218e-08, 0.649286091, 2.71342682e-08, -0.7605443),
-            CFrame.new(264.136658, 778.901245, -3707.06226, -0.0394053459, 3.62791468e-08, 0.999223292, 1.126974e-07, 1, -3.18630171e-08, -0.999223292, 1.11354296e-07, -0.0394053459),
-            CFrame.new(572.512817, 753.44928, -3528.46411, 0.851430178, -3.60095527e-08, 0.524467945, 2.8556677e-08, 1, 2.22998064e-08, -0.524467945, -4.00966682e-09, 0.851430178)
-        } 
-    }
+    { name = "world 5", MapName = "Slime Verse", ZoneIndex = 1, points = { CFrame.new(687, 779, -352), CFrame.new(694, 779, -326) } },
+    { name = "world 6", MapName = "Slime Verse", ZoneIndex = 2, points = { CFrame.new(411.280, 778.901, -3802.600), CFrame.new(395.062, 778.901, -3624.376), CFrame.new(423.885, 778.901, -3560.519), CFrame.new(264.136, 778.901, -3707.062), CFrame.new(572.512, 753.449, -3528.464) } }
 }
 
 for _, cfg in ipairs(worlds) do
@@ -128,17 +134,21 @@ for _, cfg in ipairs(worlds) do
         task.spawn(function()
             local remote = game:GetService("ReplicatedStorage").BridgeNet.dataRemoteEvent
             while T.Value do
-                if Omni and (Omni.Data.Map ~= cfg.MapName or Omni.Data.Zone ~= cfg.ZoneIndex) then
-                    remote:FireServer({{ "Player", "Teleport", "Teleport", cfg.MapName, cfg.ZoneIndex, n = 5 }, "\x02"})
-                    repeat task.wait(1) until (Omni.Data.Map == cfg.MapName and Omni.Data.Zone == cfg.ZoneIndex) or not T.Value
-                    task.wait(2)
-                end
-                for _, target in ipairs(cfg.points) do
-                    if not T.Value or (Omni and Omni.Data.Map ~= cfg.MapName) then break end
-                    local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-                    if hrp and game.Players.LocalPlayer.Character.Humanoid.Health > 0 then
-                        hrp.CFrame = target
-                        task.wait(opWaitTime)
+                local currentMode = Omni and Omni.Data and Omni.Data.Mode or ""
+                if currentMode == "Tempest Invasion" then task.wait(2)
+                else
+                    if Omni and (Omni.Data.Map ~= cfg.MapName or Omni.Data.Zone ~= cfg.ZoneIndex) then
+                        remote:FireServer({{ "Player", "Teleport", "Teleport", cfg.MapName, cfg.ZoneIndex, n = 5 }, "\x02"})
+                        repeat task.wait(1) until (Omni.Data.Map == cfg.MapName and Omni.Data.Zone == cfg.ZoneIndex) or not T.Value
+                        task.wait(2)
+                    end
+                    for _, target in ipairs(cfg.points) do
+                        if not T.Value or (Omni and Omni.Data.Mode == "Tempest Invasion") or (Omni and Omni.Data.Map ~= cfg.MapName) then break end
+                        local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                        if hrp and game.Players.LocalPlayer.Character.Humanoid.Health > 0 then
+                            hrp.CFrame = target
+                            task.wait(opWaitTime)
+                        end
                     end
                 end
                 task.wait(0.1)
@@ -148,7 +158,7 @@ for _, cfg in ipairs(worlds) do
 end
 
 -- ==========================================
--- 🎲 Tab: Reroll (Complete List - No Deletions)
+-- 🎲 Tab: Reroll (Complete List)
 -- ==========================================
 local function AddRoll(title, typeName, n, rType)
     local T = Tabs.Reroll:AddToggle(title, {Title = title, Default = false})
@@ -164,18 +174,95 @@ local function AddRoll(title, typeName, n, rType)
         end)
     end)
 end
-
-AddRoll("Auto Roll Haki", "Haki", 5)
-AddRoll("Auto Roll Fruit", "Fruit", 5)
-AddRoll("Auto Roll Race", "Race", 5)
-AddRoll("Auto Roll Sword", "Swords Banner", 4, "Banner")
-AddRoll("Auto Roll Dragon Power", "Dragon Power", 5)
-AddRoll("Auto Roll Slime Power", "Slime Power", 5)
-AddRoll("Auto Spin Dragon Wish", "Dragon Wish", 4, "Roulette")
+AddRoll("Auto Roll Haki", "Haki", 5); AddRoll("Auto Roll Fruit", "Fruit", 5); AddRoll("Auto Roll Race", "Race", 5)
+AddRoll("Auto Roll Sword", "Swords Banner", 4, "Banner"); AddRoll("Auto Spin Dragon Wish", "Dragon Wish", 4, "Roulette")
 AddRoll("Auto Roll Primordial Demon", "Primordial Demon", 5)
 
 -- ==========================================
--- 📦 Tab: Misc (Auto Claim Rewards)
+-- ⚔️ Tab: Raid (Join & Attribute Farm)
+-- ==========================================
+local AutoJoinRaid = Tabs.Raid:AddToggle("AutoJoinRaid", {Title = "1. Auto Join Raid", Default = false})
+AutoJoinRaid:OnChanged(function()
+    task.spawn(function()
+        local remote = game:GetService("ReplicatedStorage").BridgeNet.dataRemoteEvent
+        while AutoJoinRaid.Value do
+            local currentMode = Omni and Omni.Data and Omni.Data.Mode or ""
+            if currentMode ~= "Tempest Invasion" then
+                remote:FireServer({{"General","Gamemodes","Join","Tempest Invasion",n = 4},"\x02"})
+                task.wait(5)
+            else task.wait(2) end
+        end
+    end)
+end)
+
+AutoFarmRaid = Tabs.Raid:AddToggle("AutoFarmRaid", {Title = "2. Auto Farm Raid", Default = false})
+AutoFarmRaid:OnChanged(function()
+    task.spawn(function()
+        local hasWaited = false
+        while AutoFarmRaid.Value do
+            local raidPath = workspace:FindFirstChild("Server") and workspace.Server:FindFirstChild("Enemies") and workspace.Server.Enemies:FindFirstChild("Gamemodes") and workspace.Server.Enemies.Gamemodes:FindFirstChild("Tempest Invasion")
+            if raidPath then
+                if not hasWaited then task.wait(3.5) hasWaited = true end
+                for _, enemy in pairs(raidPath:GetChildren()) do
+                    if not AutoFarmRaid.Value then break end
+                    if (enemy:GetAttribute("Health") or 0) > 0 then
+                        while AutoFarmRaid.Value and enemy.Parent == raidPath and (enemy:GetAttribute("Health") or 0) > 0 do
+                            local myChar = game.Players.LocalPlayer.Character
+                            local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+                            if myHrp then
+                                local targetCF = nil
+                                if enemy:IsA("Model") then targetCF = enemy.PrimaryPart and enemy.PrimaryPart.CFrame or enemy:GetPivot()
+                                elseif enemy:IsA("BasePart") then targetCF = enemy.CFrame end
+                                if targetCF then myChar:PivotTo(targetCF * CFrame.new(0, 0, 3)) end
+                            end
+                            task.wait(0.2)
+                        end
+                    end
+                end
+            else hasWaited = false end
+            task.wait(0.1)
+        end
+    end)
+end)
+
+-- ==========================================
+-- 📦 Tab: Items (Inventory Scanner)
+-- ==========================================
+Tabs.Items:AddSection("Inventory Scanner")
+local SelectedItemInfo = Tabs.Items:AddParagraph({ Title = "Item Details", Content = "Select an item to see amount" })
+
+local allItemsMap = {}
+local ItemDropdown = Tabs.Items:AddDropdown("ItemDropdown", {
+    Title = "Select Scanned Item", Values = {"Waiting for scan..."}, Multi = false, Default = 1,
+    Callback = function(Value)
+        if allItemsMap[Value] then
+            SelectedItemInfo:SetTitle(Value .. " | Amount: " .. tostring(allItemsMap[Value]))
+        end
+    end
+})
+
+Tabs.Items:AddButton({
+    Title = "🔍 Scan Inventory Items",
+    Callback = function()
+        task.spawn(function()
+            if Omni and Omni.Data and Omni.Data.Inventory and Omni.Data.Inventory.Items then
+                local options = {}
+                table.clear(allItemsMap)
+                for name, amount in pairs(Omni.Data.Inventory.Items) do
+                    local displayName = tostring(name)
+                    allItemsMap[displayName] = amount
+                    table.insert(options, displayName)
+                end
+                table.sort(options)
+                ItemDropdown:SetValues(options)
+                Fluent:Notify({ Title = "Scanner", Content = "Found " .. #options .. " types of items", Duration = 2 })
+            end
+        end)
+    end
+})
+
+-- ==========================================
+-- 📦 Tab: Misc (Restored Full)
 -- ==========================================
 local ClaimT = Tabs.Misc:AddToggle("AutoClaim", {Title = "Auto Claim & Reset Rewards", Default = false})
 ClaimT:OnChanged(function()
@@ -187,7 +274,6 @@ ClaimT:OnChanged(function()
                 for i = 1, 7 do
                     if not data.Claimed[tostring(i)] and data.TimePlayed >= Omni.Shared.TimeRewards[i].Time then
                         remote:FireServer({{ "General", "TimeRewards", "Claim", i }, "\x02"})
-                        task.wait(1.5)
                     end
                 end
                 if data.Claimed["7"] then remote:FireServer({{[1] = "General", [2] = "TimeRewards", [3] = "Reset"}, "\x02"}) end
@@ -197,11 +283,7 @@ ClaimT:OnChanged(function()
     end)
 end)
 
--- ==========================================
--- ⚙️ Settings & Config Management
--- ==========================================
+-- Finish Setup
 SaveManager:SetLibrary(Fluent); InterfaceManager:SetLibrary(Fluent)
-SaveManager:IgnoreThemeSettings(); SaveManager:SetIgnoreIndexes({})
 InterfaceManager:BuildInterfaceSection(Tabs.Settings); SaveManager:BuildConfigSection(Tabs.Settings)
-
 Window:SelectTab(1); SaveManager:LoadAutoloadConfig()
