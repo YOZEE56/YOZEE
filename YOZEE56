@@ -2,14 +2,14 @@
 -- NexusUI v3.5 - [Full Independent Skill Delay Control]
 -- =================================================================
 local NexusUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/LeoAlip/NexusUI/refs/heads/main/NexusUI.lua"))()
-local Window = NexusUI:CreateWindow({ Name = "Broken Blade", Version = "" })
+local Window = NexusUI:CreateWindow({ Name = "Broken Blade", Version = "3.5" })
 
 -- Buffers
 local weaponBuffers = { "\147T\204\143\145\137\162tp\199\002\147\203\192\129}\177\128\000\000\000\203@J\238\026\224\000\000\000\203\192\136PX`\000\000\000\172activationId@\168actionId\169\229\164\170\229\136\128/C1\162we\195\172skillUseType\166manual\168position\199\002\147\203\192\130iS \000\000\000\203@KGz\224\000\000\000\203\192\134]\026\160\000\000\000\166facing\199\002\147\203?\218\a\210\000\000\000\000\000\203\191\237;\204`\000\000\000\170weaponType\166Katana\174basisDirection\199\002\147\203?\219Q\031\192\000\000\000\000\203\191\236\240M\000\000\000\000", "\147\204\151\204\143\145\137\162tp\199\002\147\203\192\1384v\224\000\000\000\203@Q\226\176\128\000\000\000\203\192\144N\212\128\000\000\000\172activationIdw\168actionId\169\233\149\191\229\137\145/C1\162we\195\172skillUseType\166manual\168position\199\002\147\203\192\137\213\139`\000\000\000\203@P\227o\160\000\000\000\203\192\142\181{\224\000\000\000\166facing\199\002\147\203?\228\253\250\224\000\000\000\000\203\191\232&\250 \000\000\000\170weaponType\165Sword\174basisDirection\199\002\147\203\191\200n6 \000\000\000\000\203\191\239ig@\000\000\000" }
 local swordSkills = { Z = "\147\204\186\204\143\145\136\172skillUseType\166manual\166facing\199\002\147\203\191\236E\b\128\000\000\000\000\203\191\221\253\t\000\000\000\000\170weaponType\165Sword\168position\199\002\147\203\192\137.\229@\000\000\000\203@P\237g@\000\000\000\203\192\143\tM\224\000\000\000\174basisDirection\199\002\147\203\191\226[\014 \000\000\000\000\203\191\2346E\128\000\000\000\172activationId\204\130\168actionId\173\233\149\191\229\137\145/\232\180\175\229\136\186\162we\194", X = "\147\204\187\204\143\145\136\172skillUseType\166manual\166facing\199\002\147\203?\200g\158@\000\000\000\203?\203_$\224\000\000\000\203?\238\168\154 \000\000\000\170weaponType\165Sword\168position\199\002\147\203\192\137v\180\160\000\000\000\203@P\209\250\160\000\000\000\203\192\143\136\151\192\000\000\000\174basisDirection\199\002\147\203?\237\030\144`\000\000\000\000\203?\218\137\161\160\000\000\000\172activationId\204\131\168actionId\173\233\149\191\229\137\145/\233\151\170\231\131\129\162we\194", C = "\147\204\188\204\143\145\136\172skillUseType\166manual\166facing\199\002\147\203?\212x#\224\000\000\000\000\203?\238Q\181\000\000\000\000\170weaponType\165Sword\168position\199\002\147\203\192\137v\185\160\000\000\000\203@P\233P@\000\000\000\203\192\143\136\144\128\000\000\000\174basisDirection\199\002\147\203?\237\030\144`\000\000\000\000\203?\218\137\161\160\000\000\000\172activationId\204\132\168actionId\176\233\149\191\229\137\145/\228\186\148\232\138\146\230\152\159\162we\194" }
 local katanaSkills = { Z = "\147L\204\143\145\137\162tp\199\002\147\203\192\129}=\000\000\000\000\203@J\238+\128\000\000\000\203\192\136PV\000\000\000\000\172activationId8\168actionId\173\229\164\170\229\136\128/\230\139\148\229\136\128\162we\195\172skillUseType\166manual\168position\199\002\147\203\192\130\168q@\000\000\000\203@KGz\224\000\000\000\203\192\134\1694`\000\000\000\166facing\199\002\147\203?\239=\215@\000\000\000\000\203?\203\179\219\224\000\000\000\170weaponType\166Katana\174basisDirection\199\002\147\203?\226y\180\224\000\000\000\000\203\191\234 \179\192\000\000\000", X = "\147R\204\143\145\137\162tp\199\002\147\203\192\129}\177\128\000\000\000\203@J\238\026\224\000\000\000\203\192\136PX`\000\000\000\172activationId>\168actionId\173\229\164\170\229\136\128/\228\184\128\233\151\170\162we\195\172skillUseType\166manual\168position\199\002\147\203\192\130h\135\160\000\000\000\203@KGz\224\000\000\000\203\192\134w\249\224\000\000\000\166facing\199\002\147\203?\218\a\210\000\000\000\000\000\203\191\237;\204`\000\000\000\170weaponType\166Katana\174basisDirection\199\002\147\203?\220}\161\192\000\000\000\000\203\191\236\167\128\192\000\000\000" }
 
--- ตัวแปรควบคุม
+-- Controls
 local Settings = { dual = false, SZ = false, SX = false, SC = false, KZ = false, KX = false }
 local Delays = { attack = 0.01, SZ = 0.5, SX = 0.5, SC = 0.5, KZ = 0.5, KX = 0.5 }
 local weaponIdx = 1
@@ -17,12 +17,12 @@ local function fire(b) game:GetService("ReplicatedStorage"):FindFirstChild("Remo
 
 -- UI
 local MainTab = Window:CreateTab({ Name = "Combat", Icon = "⚔️" })
-MainTab:CreateSection({ Name = "Manual Dual Attack" }):CreateToggle({ Name = "Enable Dual Attack", Callback = function(s) Settings.dual = s end })
-MainTab:CreateSection({ Name = "Attack Settings" }):CreateSlider({ Name = "Attack Delay", Min = 0.001, Max = 0.5, Default = 0.01, Callback = function(v) Delays.attack = v end })
+MainTab:CreateSection({ Name = "Dual Attack" }):CreateToggle({ Name = "Enable Dual Attack", Callback = function(s) Settings.dual = s end })
+MainTab:CreateSection({ Name = "Settings" }):CreateSlider({ Name = "Attack Delay", Min = 0.001, Max = 0.5, Default = 0.01, Callback = function(v) Delays.attack = v end })
 
 local SkillTab = Window:CreateTab({ Name = "Skills", Icon = "🔥" })
-local SkillSec = SkillTab:CreateSection({ Name = "Skills Controller" })
--- สร้างปุ่มพร้อม Slider แยกของใครของมัน
+local SkillSec = SkillTab:CreateSection({ Name = "Skill Configuration" })
+
 for _, s in pairs({"Z", "X", "C"}) do
     SkillSec:CreateToggle({ Name = "Sword "..s, Callback = function(v) Settings["S"..s] = v end })
     SkillSec:CreateSlider({ Name = "Sword "..s.." Delay", Min = 0.1, Max = 3, Default = 0.5, Callback = function(v) Delays["S"..s] = v end })
@@ -32,7 +32,7 @@ for _, s in pairs({"Z", "X"}) do
     SkillSec:CreateSlider({ Name = "Katana "..s.." Delay", Min = 0.1, Max = 3, Default = 0.5, Callback = function(v) Delays["K"..s] = v end })
 end
 
--- ลูปการทำงานแยกส่วน
+-- Execution Loops
 task.spawn(function() while true do if Settings.dual then fire(weaponBuffers[weaponIdx]); weaponIdx = (weaponIdx % #weaponBuffers) + 1 end; task.wait(Delays.attack) end end)
 for _, s in pairs({"SZ", "SX", "SC", "KZ", "KX"}) do
     task.spawn(function() while true do 
