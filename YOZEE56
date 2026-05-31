@@ -1,304 +1,44 @@
--- [[ YUZEE Script v25.0 - Speed Slider Fix & Full Restoration ]] --
+-- =================================================================
+-- NexusUI v3.5 - [Full Independent Skill Delay Control]
+-- =================================================================
+local NexusUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/LeoAlip/NexusUI/refs/heads/main/NexusUI.lua"))()
+local Window = NexusUI:CreateWindow({ Name = "Broken Blade", Version = "" })
 
-local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
-local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
-local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+-- Buffers
+local weaponBuffers = { "\147T\204\143\145\137\162tp\199\002\147\203\192\129}\177\128\000\000\000\203@J\238\026\224\000\000\000\203\192\136PX`\000\000\000\172activationId@\168actionId\169\229\164\170\229\136\128/C1\162we\195\172skillUseType\166manual\168position\199\002\147\203\192\130iS \000\000\000\203@KGz\224\000\000\000\203\192\134]\026\160\000\000\000\166facing\199\002\147\203?\218\a\210\000\000\000\000\000\203\191\237;\204`\000\000\000\170weaponType\166Katana\174basisDirection\199\002\147\203?\219Q\031\192\000\000\000\000\203\191\236\240M\000\000\000\000", "\147\204\151\204\143\145\137\162tp\199\002\147\203\192\1384v\224\000\000\000\203@Q\226\176\128\000\000\000\203\192\144N\212\128\000\000\000\172activationIdw\168actionId\169\233\149\191\229\137\145/C1\162we\195\172skillUseType\166manual\168position\199\002\147\203\192\137\213\139`\000\000\000\203@P\227o\160\000\000\000\203\192\142\181{\224\000\000\000\166facing\199\002\147\203?\228\253\250\224\000\000\000\000\203\191\232&\250 \000\000\000\170weaponType\165Sword\174basisDirection\199\002\147\203\191\200n6 \000\000\000\000\203\191\239ig@\000\000\000" }
+local swordSkills = { Z = "\147\204\186\204\143\145\136\172skillUseType\166manual\166facing\199\002\147\203\191\236E\b\128\000\000\000\000\203\191\221\253\t\000\000\000\000\170weaponType\165Sword\168position\199\002\147\203\192\137.\229@\000\000\000\203@P\237g@\000\000\000\203\192\143\tM\224\000\000\000\174basisDirection\199\002\147\203\191\226[\014 \000\000\000\000\203\191\2346E\128\000\000\000\172activationId\204\130\168actionId\173\233\149\191\229\137\145/\232\180\175\229\136\186\162we\194", X = "\147\204\187\204\143\145\136\172skillUseType\166manual\166facing\199\002\147\203?\200g\158@\000\000\000\203?\203_$\224\000\000\000\203?\238\168\154 \000\000\000\170weaponType\165Sword\168position\199\002\147\203\192\137v\180\160\000\000\000\203@P\209\250\160\000\000\000\203\192\143\136\151\192\000\000\000\174basisDirection\199\002\147\203?\237\030\144`\000\000\000\000\203?\218\137\161\160\000\000\000\172activationId\204\131\168actionId\173\233\149\191\229\137\145/\233\151\170\231\131\129\162we\194", C = "\147\204\188\204\143\145\136\172skillUseType\166manual\166facing\199\002\147\203?\212x#\224\000\000\000\000\203?\238Q\181\000\000\000\000\170weaponType\165Sword\168position\199\002\147\203\192\137v\185\160\000\000\000\203@P\233P@\000\000\000\203\192\143\136\144\128\000\000\000\174basisDirection\199\002\147\203?\237\030\144`\000\000\000\000\203?\218\137\161\160\000\000\000\172activationId\204\132\168actionId\176\233\149\191\229\137\145/\228\186\148\232\138\146\230\152\159\162we\194" }
+local katanaSkills = { Z = "\147L\204\143\145\137\162tp\199\002\147\203\192\129}=\000\000\000\000\203@J\238+\128\000\000\000\203\192\136PV\000\000\000\000\172activationId8\168actionId\173\229\164\170\229\136\128/\230\139\148\229\136\128\162we\195\172skillUseType\166manual\168position\199\002\147\203\192\130\168q@\000\000\000\203@KGz\224\000\000\000\203\192\134\1694`\000\000\000\166facing\199\002\147\203?\239=\215@\000\000\000\000\203?\203\179\219\224\000\000\000\170weaponType\166Katana\174basisDirection\199\002\147\203?\226y\180\224\000\000\000\000\203\191\234 \179\192\000\000\000", X = "\147R\204\143\145\137\162tp\199\002\147\203\192\129}\177\128\000\000\000\203@J\238\026\224\000\000\000\203\192\136PX`\000\000\000\172activationId>\168actionId\173\229\164\170\229\136\128/\228\184\128\233\151\170\162we\195\172skillUseType\166manual\168position\199\002\147\203\192\130h\135\160\000\000\000\203@KGz\224\000\000\000\203\192\134w\249\224\000\000\000\166facing\199\002\147\203?\218\a\210\000\000\000\000\000\203\191\237;\204`\000\000\000\170weaponType\166Katana\174basisDirection\199\002\147\203?\220}\161\192\000\000\000\000\203\191\236\167\128\192\000\000\000" }
 
--- Load Game Module
-local Omni = nil
-pcall(function()
-    Omni = require(game:GetService("ReplicatedStorage"):WaitForChild("Omni", 10))
-end)
+-- ตัวแปรควบคุม
+local Settings = { dual = false, SZ = false, SX = false, SC = false, KZ = false, KX = false }
+local Delays = { attack = 0.01, SZ = 0.5, SX = 0.5, SC = 0.5, KZ = 0.5, KX = 0.5 }
+local weaponIdx = 1
+local function fire(b) game:GetService("ReplicatedStorage"):FindFirstChild("Remote_Event"):FireServer(buffer.fromstring(b)) end
 
-local Window = Fluent:CreateWindow({
-    Title = "YOZEE Script",
-    SubTitle = "YUZEE Script", 
-    TabWidth = 160,
-    Size = UDim2.fromOffset(580, 520),
-    Acrylic = true,
-    Theme = "Dark",
-    MinimizeKey = Enum.KeyCode.RightShift
-})
+-- UI
+local MainTab = Window:CreateTab({ Name = "Combat", Icon = "⚔️" })
+MainTab:CreateSection({ Name = "Manual Dual Attack" }):CreateToggle({ Name = "Enable Dual Attack", Callback = function(s) Settings.dual = s end })
+MainTab:CreateSection({ Name = "Attack Settings" }):CreateSlider({ Name = "Attack Delay", Min = 0.001, Max = 0.5, Default = 0.01, Callback = function(v) Delays.attack = v end })
 
--- ==========================================
--- 📂 Tabs Creation
--- ==========================================
-local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
-    Forge = Window:AddTab({ Title = "Forge", Icon = "hammer" }),
-    OpFarm = Window:AddTab({ Title = "op", Icon = "zap" }),
-    Reroll = Window:AddTab({ Title = "Reroll", Icon = "refresh-cw" }),
-    Raid = Window:AddTab({ Title = "Raid", Icon = "swords" }),
-    Items = Window:AddTab({ Title = "Items", Icon = "package" }),
-    Misc = Window:AddTab({ Title = "Misc", Icon = "box" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
-}
-
-local AutoFarmRaid = { Value = false }
-
--- ==========================================
--- ⚔️ Tab: Main (Optimization)
--- ==========================================
-Tabs.Main:AddButton({
-    Title = "Remove Gacha UI",
-    Description = "Delete Gacha Animation UI to reduce lag",
-    Callback = function()
-        local player = game.Players.LocalPlayer
-        local gachaAnim = player:WaitForChild("PlayerGui"):FindFirstChild("GachaAnimation")
-        if gachaAnim and gachaAnim:FindFirstChild("Main") then
-            gachaAnim.Main:Destroy()
-            Fluent:Notify({ Title = "Success", Content = "Gacha UI Removed!", Duration = 2 })
-        end
-    end
-})
-
--- ==========================================
--- 🔨 Tab: Forge (Full Restoration)
--- ==========================================
-local memUnits, unitLockStatus, selectedMemUUID = {}, {}, ""
-local StatusLabel = Tabs.Forge:AddParagraph({ Title = "Selected Unit Status", Content = "Please scan and select a unit" })
-
-local ForgeDropdown = Tabs.Forge:AddDropdown("ForgeDropdown", {
-    Title = "Select Unit", Values = {"Waiting for scan..."}, Multi = false, Default = 1,
-    Callback = function(Value)
-        selectedMemUUID = memUnits[Value] or ""
-        StatusLabel:SetTitle("Unit Status: " .. (unitLockStatus[Value] or "Unknown"))
-    end
-})
-
-Tabs.Forge:AddButton({
-    Title = "🔍 Scan Units",
-    Callback = function()
-        task.spawn(function()
-            local options = {}
-            table.clear(memUnits); table.clear(unitLockStatus)
-            for _, v in pairs(getgc(true)) do
-                if type(v) == "table" and rawget(v, "Inventory") and rawget(rawget(v, "Inventory"), "Units") then
-                    for uid, unitData in pairs(v.Inventory.Units) do
-                        local name, isLocked = tostring(unitData.Name), rawget(unitData, "Locked")
-                        local display = name .. " | " .. string.sub(tostring(uid), 1, 6)
-                        memUnits[display] = uid
-                        unitLockStatus[display] = isLocked and "Locked 🔒" or "Unlocked 🔓"
-                        table.insert(options, display)
-                    end
-                end
-            end
-            if #options > 0 then table.sort(options) ForgeDropdown:SetValues(options) end
-        end)
-    end
-})
-
-local forgeItems = {
-    { r = "Mythical", t = "Divine Energy Surge", items = { { Name = "Wood Katana", Amount = 10 }, { Name = "Diamond", Amount = 6 } } },
-    { r = "Legendary", t = "Sea CaptainWill", items = { { Name = "Pirate Flag", Amount = 10 }, { Name = "Boat Rudder", Amount = 10 } } },
-    { r = "Epic", t = "Underworld Curse", items = { { Name = "Pirate Skull", Amount = 6 }, { Name = "Wanted Leaflet", Amount = 10 } } }
-}
-for _, forge in ipairs(forgeItems) do
-    Tabs.Forge:AddButton({
-        Title = "[" .. forge.r .. "] " .. forge.t,
-        Callback = function()
-            if selectedMemUUID == "" then return end
-            game:GetService("ReplicatedStorage").BridgeNet.dataRemoteEvent:FireServer({{ "General", "PassivePunks", "Forge", selectedMemUUID, forge.items, n = 5 }, "\x02"})
-        end
-    })
+local SkillTab = Window:CreateTab({ Name = "Skills", Icon = "🔥" })
+local SkillSec = SkillTab:CreateSection({ Name = "Skills Controller" })
+-- สร้างปุ่มพร้อม Slider แยกของใครของมัน
+for _, s in pairs({"Z", "X", "C"}) do
+    SkillSec:CreateToggle({ Name = "Sword "..s, Callback = function(v) Settings["S"..s] = v end })
+    SkillSec:CreateSlider({ Name = "Sword "..s.." Delay", Min = 0.1, Max = 3, Default = 0.5, Callback = function(v) Delays["S"..s] = v end })
+end
+for _, s in pairs({"Z", "X"}) do
+    SkillSec:CreateToggle({ Name = "Katana "..s, Callback = function(v) Settings["K"..s] = v end })
+    SkillSec:CreateSlider({ Name = "Katana "..s.." Delay", Min = 0.1, Max = 3, Default = 0.5, Callback = function(v) Delays["K"..s] = v end })
 end
 
--- ==========================================
--- ⚡ Tab: op (World 1-5 ปรับให้เหมือน World 6)
--- ==========================================
-Tabs.OpFarm:AddSection("Farm Settings")
-local opWaitTime = 2
-Tabs.OpFarm:AddSlider("FarmSpeedSlider", { 
-    Title = "Farm Speed (Delay)", 
-    Description = "Lower is faster, Higher is safer",
-    Default = 2, 
-    Min = 0.5, 
-    Max = 10, 
-    Rounding = 1, 
-    Callback = function(V) opWaitTime = V end 
-})
-
-Tabs.OpFarm:AddSection("World Farm")
-local worlds = {
-    { name = "world 1", MapName = "Fruits Verse", ZoneIndex = 1, points = { CFrame.new(6062, 797, -827), CFrame.new(6166, 797, -798) } },
-    { name = "world 2", MapName = "Fruits Verse", ZoneIndex = 2, points = { CFrame.new(11853, -11, -23103), CFrame.new(11786, -11, -23081) } },
-    { name = "world 3", MapName = "Dragon Verse", ZoneIndex = 1, points = { CFrame.new(15464, 787, -2635), CFrame.new(15460, 787, -2453) } },
-    { name = "world 4", MapName = "Dragon Verse", ZoneIndex = 2, points = { CFrame.new(4689, 788, 5331), CFrame.new(4642, 788, 5331) } },
-    { name = "world 5", MapName = "Slime Verse", ZoneIndex = 1, points = { CFrame.new(687, 779, -352), CFrame.new(694, 779, -326) } },
-    { name = "world 6", MapName = "Slime Verse", ZoneIndex = 2, points = { 
-        CFrame.new(411.280, 778.901, -3802.600), 
-        CFrame.new(395.062, 778.901, -3624.376), 
-        CFrame.new(423.885, 778.901, -3560.519), 
-        CFrame.new(264.136, 778.901, -3707.062), 
-        CFrame.new(572.512, 753.449, -3528.464) 
-    } }
-}
-
-for _, cfg in ipairs(worlds) do
-    local T = Tabs.OpFarm:AddToggle("Farm"..cfg.name, {Title = "op farm " .. cfg.name, Default = false})
-    T:OnChanged(function()
-        task.spawn(function()
-            local remote = game:GetService("ReplicatedStorage").BridgeNet.dataRemoteEvent
-            while T.Value do
-                local currentMode = (Omni and Omni.Data and Omni.Data.Mode) or ""
-                
-                -- ตรรกะเหมือน World 6: ถ้าอยู่ใน Raid (Tempest Invasion) ให้หยุดทำงาน OP Farm
-                if currentMode == "Tempest Invasion" then 
-                    task.wait(2) 
-                else
-                    -- ถ้าไม่ได้อยู่ใน Raid ให้เช็คว่าอยู่แมพที่ถูกต้องไหม ถ้าไม่ให้วาร์ปไป
-                    if Omni and (Omni.Data.Map ~= cfg.MapName or Omni.Data.Zone ~= cfg.ZoneIndex) then
-                        remote:FireServer({{ "Player", "Teleport", "Teleport", cfg.MapName, cfg.ZoneIndex, n = 5 }, "\x02"})
-                        repeat task.wait(1) until (Omni.Data.Map == cfg.MapName and Omni.Data.Zone == cfg.ZoneIndex) or not T.Value or (Omni.Data.Mode == "Tempest Invasion")
-                        task.wait(2)
-                    end
-                    
-                    -- วนลูปฟาร์มตามจุดที่กำหนด (ทำงานเหมือน World 6)
-                    for _, target in ipairs(cfg.points) do
-                        -- เช็คระหว่างลูปด้วยว่า Raid เริ่มหรือยัง หรือปิด Toggle ไปหรือยัง
-                        if not T.Value or (Omni and Omni.Data.Mode == "Tempest Invasion") or (Omni and Omni.Data.Map ~= cfg.MapName) then break end
-                        
-                        local char = game.Players.LocalPlayer.Character
-                        local hrp = char and char:FindFirstChild("HumanoidRootPart")
-                        if hrp and char.Humanoid.Health > 0 then
-                            hrp.CFrame = target
-                            task.wait(opWaitTime)
-                        end
-                    end
-                end
-                task.wait(0.1)
-            end
-        end)
-    end)
+-- ลูปการทำงานแยกส่วน
+task.spawn(function() while true do if Settings.dual then fire(weaponBuffers[weaponIdx]); weaponIdx = (weaponIdx % #weaponBuffers) + 1 end; task.wait(Delays.attack) end end)
+for _, s in pairs({"SZ", "SX", "SC", "KZ", "KX"}) do
+    task.spawn(function() while true do 
+        if Settings[s] then 
+            if s:sub(1,1) == "S" then fire(swordSkills[s:sub(2)]) else fire(katanaSkills[s:sub(2)]) end 
+        end
+        task.wait(Delays[s]) 
+    end end)
 end
-
--- ==========================================
--- 🎲 Tab: Reroll (Complete List)
--- ==========================================
-local function AddRoll(title, typeName, n, rType)
-    local T = Tabs.Reroll:AddToggle(title, {Title = title, Default = false})
-    T:OnChanged(function()
-        task.spawn(function()
-            local remote = game:GetService("ReplicatedStorage").BridgeNet.dataRemoteEvent
-            while T.Value do
-                if rType == "Banner" then remote:FireServer({{"General", "Banner", "Roll", typeName, n = n}, "\x02"})
-                elseif rType == "Roulette" then remote:FireServer({{"General", "Roulette", "Roll", typeName, n = n}, "\x02"})
-                else remote:FireServer({{"General", "Gacha", "Roll", typeName, {}, n = n}, "\x02"}) end
-                task.wait(0.5)
-            end
-        end)
-    end)
-end
-AddRoll("Auto Roll Haki", "Haki", 5); AddRoll("Auto Roll Fruit", "Fruit", 5); AddRoll("Auto Roll Race", "Race", 5)
-AddRoll("Auto Roll Sword", "Swords Banner", 4, "Banner"); AddRoll("Auto Spin Dragon Wish", "Dragon Wish", 4, "Roulette")
-AddRoll("Auto Roll Primordial Demon", "Primordial Demon", 5)
-
--- ==========================================
--- ⚔️ Tab: Raid (Join & Attribute Farm)
--- ==========================================
-local AutoJoinRaid = Tabs.Raid:AddToggle("AutoJoinRaid", {Title = "1. Auto Join Raid", Default = false})
-AutoJoinRaid:OnChanged(function()
-    task.spawn(function()
-        local remote = game:GetService("ReplicatedStorage").BridgeNet.dataRemoteEvent
-        while AutoJoinRaid.Value do
-            local currentMode = Omni and Omni.Data and Omni.Data.Mode or ""
-            if currentMode ~= "Tempest Invasion" then
-                remote:FireServer({{"General","Gamemodes","Join","Tempest Invasion",n = 4},"\x02"})
-                task.wait(5)
-            else task.wait(2) end
-        end
-    end)
-end)
-
-AutoFarmRaid = Tabs.Raid:AddToggle("AutoFarmRaid", {Title = "2. Auto Farm Raid", Default = false})
-AutoFarmRaid:OnChanged(function()
-    task.spawn(function()
-        local hasWaited = false
-        while AutoFarmRaid.Value do
-            local raidPath = workspace:FindFirstChild("Server") and workspace.Server:FindFirstChild("Enemies") and workspace.Server.Enemies:FindFirstChild("Gamemodes") and workspace.Server.Enemies.Gamemodes:FindFirstChild("Tempest Invasion")
-            if raidPath then
-                if not hasWaited then task.wait(3.5) hasWaited = true end
-                for _, enemy in pairs(raidPath:GetChildren()) do
-                    if not AutoFarmRaid.Value then break end
-                    if (enemy:GetAttribute("Health") or 0) > 0 then
-                        while AutoFarmRaid.Value and enemy.Parent == raidPath and (enemy:GetAttribute("Health") or 0) > 0 do
-                            local myChar = game.Players.LocalPlayer.Character
-                            local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
-                            if myHrp then
-                                local targetCF = nil
-                                if enemy:IsA("Model") then targetCF = enemy.PrimaryPart and enemy.PrimaryPart.CFrame or enemy:GetPivot()
-                                elseif enemy:IsA("BasePart") then targetCF = enemy.CFrame end
-                                if targetCF then myChar:PivotTo(targetCF * CFrame.new(0, 0, 3)) end
-                            end
-                            task.wait(0.2)
-                        end
-                    end
-                end
-            else hasWaited = false end
-            task.wait(0.1)
-        end
-    end)
-end)
-
--- ==========================================
--- 📦 Tab: Items (Inventory Scanner)
--- ==========================================
-Tabs.Items:AddSection("Inventory Scanner")
-local SelectedItemInfo = Tabs.Items:AddParagraph({ Title = "Item Details", Content = "Select an item to see amount" })
-
-local allItemsMap = {}
-local ItemDropdown = Tabs.Items:AddDropdown("ItemDropdown", {
-    Title = "Select Scanned Item", Values = {"Waiting for scan..."}, Multi = false, Default = 1,
-    Callback = function(Value)
-        if allItemsMap[Value] then
-            SelectedItemInfo:SetTitle(Value .. " | Amount: " .. tostring(allItemsMap[Value]))
-        end
-    end
-})
-
-Tabs.Items:AddButton({
-    Title = "🔍 Scan Inventory Items",
-    Callback = function()
-        task.spawn(function()
-            if Omni and Omni.Data and Omni.Data.Inventory and Omni.Data.Inventory.Items then
-                local options = {}
-                table.clear(allItemsMap)
-                for name, amount in pairs(Omni.Data.Inventory.Items) do
-                    local displayName = tostring(name)
-                    allItemsMap[displayName] = amount
-                    table.insert(options, displayName)
-                end
-                table.sort(options)
-                ItemDropdown:SetValues(options)
-                Fluent:Notify({ Title = "Scanner", Content = "Found " .. #options .. " types of items", Duration = 2 })
-            end
-        end)
-    end
-})
-
--- ==========================================
--- 📦 Tab: Misc (Restored Full)
--- ==========================================
-local ClaimT = Tabs.Misc:AddToggle("AutoClaim", {Title = "Auto Claim & Reset Rewards", Default = false})
-ClaimT:OnChanged(function()
-    task.spawn(function()
-        local remote = game:GetService("ReplicatedStorage").BridgeNet.dataRemoteEvent
-        while ClaimT.Value do
-            pcall(function()
-                local data = Omni.Data.TimeRewards
-                for i = 1, 7 do
-                    if not data.Claimed[tostring(i)] and data.TimePlayed >= Omni.Shared.TimeRewards[i].Time then
-                        remote:FireServer({{ "General", "TimeRewards", "Claim", i }, "\x02"})
-                    end
-                end
-                if data.Claimed["7"] then remote:FireServer({{[1] = "General", [2] = "TimeRewards", [3] = "Reset"}, "\x02"}) end
-            end)
-            task.wait(3)
-        end
-    end)
-end)
-
--- Finish Setup
-SaveManager:SetLibrary(Fluent); InterfaceManager:SetLibrary(Fluent)
-InterfaceManager:BuildInterfaceSection(Tabs.Settings); SaveManager:BuildConfigSection(Tabs.Settings)
-Window:SelectTab(1); SaveManager:LoadAutoloadConfig()
