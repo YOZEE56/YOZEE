@@ -1601,7 +1601,7 @@ end)
 task.spawn(function()
     while true do
         task.wait(4)
-        if autoTitanDefense and autofarm and not isTrialOpen() then
+        if autoTitanDefense and autofarm and hasTitanDefenseKey() and not isTrialOpen() then
             -- Verify if we are already inside the World 4 Defense Arena
             local defenseArenas = workspace:FindFirstChild("DefenseArenas")
             local world4 = defenseArenas and defenseArenas:FindFirstChild("World4")
@@ -1617,7 +1617,7 @@ end)
 task.spawn(function()
     while true do
         task.wait(4)
-        if autoRaid and autofarm and not isTrialOpen() then
+        if autoRaid and autofarm and hasNinjaRaidKey() and not isTrialOpen() then
             -- Verify if we are already inside the World 1 Raid Arena
             local raidArenas = workspace:FindFirstChild("RaidArenas")
             local world1 = raidArenas and raidArenas:FindFirstChild("World1")
@@ -1928,4 +1928,3 @@ WindUI:Notify({
     Icon = "bird",
     Duration = 5
 })
-
