@@ -542,6 +542,28 @@ local function getRaidEnemiesFolder()
     return nil
 end
 
+local lastWarpTime = 0
+local function warpToWorld(worldNum)
+    local now = os.time()
+    if now - lastWarpTime < 10 then return false end
+    lastWarpTime = now
+    
+    local args = {
+        {
+            worldNum,
+            "\135"
+        }
+    }
+    local replicatedStorage = game:GetService("ReplicatedStorage")
+    local bridgeNet2 = replicatedStorage:FindFirstChild("BridgeNet2")
+    local dataRemoteEvent = bridgeNet2 and bridgeNet2:FindFirstChild("dataRemoteEvent")
+    if dataRemoteEvent then
+        dataRemoteEvent:FireServer(unpack(args))
+        return true
+    end
+    return false
+end
+
 -- Helper function to get the current world's enemies folder path (All Worlds 1-4 use "Enemies")
 local function getEnemiesFolder()
     -- If Titan Defense is active, use ONLY Defense Arenas path
@@ -675,7 +697,7 @@ local function createWorld1Raid()
                     n = 2
                 }
             },
-            "y"
+            "\128"
         }
     }
     
@@ -775,6 +797,7 @@ local Window = WindUI:CreateWindow({
     Author = "by YOZEE",
     Folder = "AnimeAstralSimulator",
     Icon = "rbxassetid://86949082023913",
+    Size = UDim2.fromOffset(580, 460), -- Sets width & height for mobile layout compatibility
     NewElements = true,
     HideSearchBar = true,
     Theme = "Amber",
@@ -783,11 +806,12 @@ local Window = WindUI:CreateWindow({
     OpenButton = {
         Title = "Axel Hub",
         CornerRadius = UDim.new(1, 0),
-        StrokeThickness = 3,
+        StrokeThickness = 2,
         Enabled = true,
         Draggable = true,
-        OnlyMobile = false,
-        Scale = 1, -- Large scale
+        OnlyMobile = true, -- Floating toggle button only visible on mobile
+        OnlyIcon = true, -- Keep icon only for a cleaner UI footprint
+        Scale = 0.8, -- Smaller button to prevent overlapping
         Color = ColorSequence.new(
             Color3.fromHex("#FFC529"),
             Color3.fromHex("#FFA500")
@@ -1093,6 +1117,10 @@ titanToggle = TitanDefenseSection:Toggle({
         end
         
         if state then
+            local worlds = workspace:FindFirstChild("Worlds")
+            if not (worlds and worlds:FindFirstChild("4")) and not isPlayerInArena() then
+                warpToWorld(4)
+            end
             createWorld4Game() -- Fire join room event immediately
             WindUI:Notify({
                 Title = "Titan Defense",
@@ -1173,6 +1201,10 @@ raidToggle = RaidSection:Toggle({
         end
         
         if state then
+            local worlds = workspace:FindFirstChild("Worlds")
+            if not (worlds and worlds:FindFirstChild("1")) and not isPlayerInArena() then
+                warpToWorld(1)
+            end
             createWorld1Raid() -- Fire join room event immediately
             WindUI:Notify({
                 Title = "World 1 Raid",
@@ -1601,12 +1633,9 @@ end)
 task.spawn(function()
     while true do
         task.wait(4)
-        if autoTitanDefense and autofarm and hasTitanDefenseKey() and not isTrialOpen() then
-            -- Verify if we are already inside the World 4 Defense Arena
-            local defenseArenas = workspace:FindFirstChild("DefenseArenas")
-            local world4 = defenseArenas and defenseArenas:FindFirstChild("World4")
-            if not world4 then
-                -- Not inside, try creating the game room
+        if autoTitanDefense and autofarm and not isTrialOpen() then
+            -- Verify if we are already inside our own Titan Defense arena
+            if getCurrentArenaType() ~= "Titan" then
                 createWorld4Game()
             end
         end
@@ -1617,12 +1646,9 @@ end)
 task.spawn(function()
     while true do
         task.wait(4)
-        if autoRaid and autofarm and hasNinjaRaidKey() and not isTrialOpen() then
-            -- Verify if we are already inside the World 1 Raid Arena
-            local raidArenas = workspace:FindFirstChild("RaidArenas")
-            local world1 = raidArenas and raidArenas:FindFirstChild("World1")
-            if not world1 then
-                -- Not inside, try creating the game room
+        if autoRaid and autofarm and not isTrialOpen() then
+            -- Verify if we are already inside our own Raid arena
+            if getCurrentArenaType() ~= "Raid" then
                 createWorld1Raid()
             end
         end
@@ -1792,7 +1818,24 @@ task.spawn(function()
     end
 end)
 
-
+-- 8c. Background loop to handle warp to target lobby worlds when auto modes are active
+task.spawn(function()
+    while true do
+        task.wait(2)
+        if autofarm and not isPlayerInArena() then
+            local worlds = workspace:FindFirstChild("Worlds")
+            if autoTitanDefense then
+                if not (worlds and worlds:FindFirstChild("4")) then
+                    warpToWorld(4)
+                end
+            elseif autoRaid then
+                if not (worlds and worlds:FindFirstChild("1")) then
+                    warpToWorld(1)
+                end
+            end
+        end
+    end
+end)
 
 -- 9. Auto Farm Loop Execution (Physics drop + Target Lock-on & dynamic CFrame follow + Smart Blacklist + Specific Attribute Checks)
 task.spawn(function()
