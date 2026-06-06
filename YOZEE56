@@ -36,6 +36,7 @@ local selectedDifficulty = "Easy"
 -- Titan Defense (World 4 Trial) Automation Variables
 local autoTitanDefense = false
 local autoRaid = false
+local autoGate = false
 
 -- Auto Switch Team Variables
 local autoSwitchTeam = false
@@ -68,7 +69,8 @@ local priorityQueue = {
 local completedTasks = {
     ["Auto Titan"] = false,
     ["Auto Raid"] = false,
-    ["Auto Trial"] = false
+    ["Auto Trial"] = false,
+    ["Auto Gate"] = false
 }
 local lastArenaType = "None"
 
@@ -159,7 +161,7 @@ local function isTrialOpen()
             for _, child in ipairs(gui:GetDescendants()) do
                 if child:IsA("TextLabel") then
                     local text = string.lower(child.Text)
-                    if string.find(text, "trial") then
+                    if string.find(text, "trial") or string.find(text, "gate") then
                         if string.find(text, "open") or string.find(text, "active") or string.find(text, "start") or string.find(text, "ready") or string.find(text, "มาแล้ว") or string.find(text, "00:00") then
                             return true
                         end
@@ -175,7 +177,7 @@ local function isTrialOpen()
             for _, child in ipairs(obj:GetDescendants()) do
                 if child:IsA("TextLabel") then
                     local text = string.lower(child.Text)
-                    if string.find(text, "trial") then
+                    if string.find(text, "trial") or string.find(text, "gate") then
                         if string.find(text, "open") or string.find(text, "active") or string.find(text, "start") or string.find(text, "ready") or string.find(text, "00:00") then
                             return true
                         end
@@ -229,6 +231,19 @@ local function getCurrentArenaType()
             if enemies and #enemies:GetChildren() > 0 then
                 return "Trial"
             end
+        end
+    end
+    
+    -- World 5 check (acts as Trial or Gate arena when autoTrial or autoGate is active)
+    if autoGate then
+        local worlds = workspace:FindFirstChild("Worlds")
+        if worlds and worlds:FindFirstChild("5") then
+            return "Gate"
+        end
+    elseif autoTrial then
+        local worlds = workspace:FindFirstChild("Worlds")
+        if worlds and worlds:FindFirstChild("5") then
+            return "Trial"
         end
     end
     
@@ -295,6 +310,11 @@ local function isTaskAvailable(taskName)
             return false
         end
         return not completedTasks["Auto Raid"]
+    elseif taskName == "Auto Gate" then
+        if isTrialOpen() then
+            return false
+        end
+        return not completedTasks["Auto Gate"]
     elseif taskName == "Auto Farm" then
         if isTrialOpen() then
             return false
@@ -311,7 +331,7 @@ local function checkResetQueue()
     
     for i = 1, 5 do
         local taskName = priorityQueue[i]
-        if taskName == "Auto Titan" or taskName == "Auto Raid" or (taskName == "Auto Trial" and not trialIsEventOnly) then
+        if taskName == "Auto Titan" or taskName == "Auto Raid" or taskName == "Auto Gate" or (taskName == "Auto Trial" and not trialIsEventOnly) then
             hasTrackedTasks = true
             if not completedTasks[taskName] then
                 allCompleted = false
@@ -323,6 +343,7 @@ local function checkResetQueue()
         completedTasks["Auto Titan"] = false
         completedTasks["Auto Raid"] = false
         completedTasks["Auto Trial"] = false
+        completedTasks["Auto Gate"] = false
         print("[Priority Queue] All queue tasks completed. Resetting queue cycle.")
     end
 end
@@ -504,6 +525,14 @@ local function isPlayerInArena()
         return true
     end
     
+    -- 5. Check if inside World 5 and autoTrial or autoGate is active
+    if autoTrial or autoGate then
+        local worlds = workspace:FindFirstChild("Worlds")
+        if worlds and worlds:FindFirstChild("5") then
+            return true
+        end
+    end
+    
     return false
 end
 
@@ -548,12 +577,22 @@ local function warpToWorld(worldNum)
     if now - lastWarpTime < 10 then return false end
     lastWarpTime = now
     
-    local args = {
-        {
-            worldNum,
-            "\135"
+    local args
+    if tostring(worldNum) == "5" or worldNum == "World5" then
+        args = {
+            {
+                "World5",
+                "\129"
+            }
         }
-    }
+    else
+        args = {
+            {
+                tonumber(worldNum) or worldNum,
+                "\135"
+            }
+        }
+    end
     local replicatedStorage = game:GetService("ReplicatedStorage")
     local bridgeNet2 = replicatedStorage:FindFirstChild("BridgeNet2")
     local dataRemoteEvent = bridgeNet2 and bridgeNet2:FindFirstChild("dataRemoteEvent")
@@ -562,6 +601,45 @@ local function warpToWorld(worldNum)
         return true
     end
     return false
+end
+
+-- Helper function to check if local player has entered the target world/arena
+local function isReadyToFarm()
+    if autoTitanDefense then
+        return getCurrentArenaType() == "Titan"
+    elseif autoRaid then
+        return getCurrentArenaType() == "Raid"
+    elseif autoTrial then
+        return getCurrentArenaType() == "Trial"
+    elseif autoGate then
+        -- Check if player is actually inside World 5
+        local worlds = workspace:FindFirstChild("Worlds")
+        local world5 = worlds and worlds:FindFirstChild("5")
+        if not world5 then return false end
+        
+        local hrp = Character and Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return false end
+        
+        local ref = world5:FindFirstChildWhichIsA("BasePart", true)
+        if ref then
+            return (hrp.Position - ref.Position).Magnitude < 1000
+        end
+        return false
+    else
+        -- Normal auto farm: check if player is actually inside selectedWorld
+        local worlds = workspace:FindFirstChild("Worlds")
+        local worldFolder = worlds and worlds:FindFirstChild(selectedWorld)
+        if not worldFolder then return false end
+        
+        local hrp = Character and Character:FindFirstChild("HumanoidRootPart")
+        if not hrp then return false end
+        
+        local ref = worldFolder:FindFirstChildWhichIsA("BasePart", true)
+        if ref then
+            return (hrp.Position - ref.Position).Magnitude < 1000
+        end
+        return false
+    end
 end
 
 -- Helper function to get the current world's enemies folder path (All Worlds 1-4 use "Enemies")
@@ -581,6 +659,13 @@ local function getEnemiesFolder()
     -- If Auto Trial is active, use ONLY Time Trial path
     if autoTrial then
         return getTimeTrialEnemiesFolder()
+    end
+
+    -- If Auto Gate is active, use World 5 Enemies path
+    if autoGate then
+        local worlds = workspace:FindFirstChild("Worlds")
+        local world5 = worlds and worlds:FindFirstChild("5")
+        return world5 and world5:FindFirstChild("Enemies")
     end
 
     local worlds = workspace:FindFirstChild("Worlds")
@@ -635,15 +720,8 @@ end
 local function joinTrialRemote()
     local args = {
         {
-            {
-                __BridgeTuplePayload__ = true,
-                Payload = {
-                    "Join",
-                    selectedDifficulty,
-                    n = 2
-                }
-            },
-            "\167"
+            "World5",
+            "\129"
         }
     }
     
@@ -717,7 +795,7 @@ local function switchTeam(teamName)
     local args = {
         {
             teamName,
-            "<"
+            "?"
         }
     }
     
@@ -797,26 +875,24 @@ local Window = WindUI:CreateWindow({
     Author = "by YOZEE",
     Folder = "AnimeAstralSimulator",
     Icon = "rbxassetid://86949082023913",
-    Size = UDim2.fromOffset(580, 460), -- Sets width & height for mobile layout compatibility
     NewElements = true,
     HideSearchBar = true,
     Theme = "Amber",
     Transparent = true,
+})
 
-    OpenButton = {
-        Title = "Axel Hub",
-        CornerRadius = UDim.new(1, 0),
-        StrokeThickness = 2,
-        Enabled = true,
-        Draggable = true,
-        OnlyMobile = true, -- Floating toggle button only visible on mobile
-        OnlyIcon = true, -- Keep icon only for a cleaner UI footprint
-        Scale = 0.8, -- Smaller button to prevent overlapping
-        Color = ColorSequence.new(
-            Color3.fromHex("#FFC529"),
-            Color3.fromHex("#FFA500")
-        ),
-    }
+Window:EditOpenButton({
+    Title = "Open Axel Hub",
+    Icon = "monitor",
+    CornerRadius = UDim.new(0,16),
+    StrokeThickness = 2,
+    Color = ColorSequence.new( -- gradient
+        Color3.fromHex("FF0F7B"), 
+        Color3.fromHex("F89B29")
+    ),
+    OnlyMobile = false,
+    Enabled = true,
+    Draggable = true,
 })
 
 Window:Tag({
@@ -896,7 +972,7 @@ end
 WorldSection:Dropdown({
     Title = "Select World",
     Desc = "Choose world to farm in",
-    Values = {"1", "2", "3", "4"},
+    Values = {"1", "2", "3", "4", "5"},
     Value = "4",
     Flag = "selectedWorld",
     Callback = function(value)
@@ -1044,7 +1120,7 @@ queueSection:Toggle({
     end
 })
 
-local queueOptions = {"None", "Auto Farm", "Auto Raid", "Auto Titan", "Auto Trial"}
+local queueOptions = {"None", "Auto Farm", "Auto Raid", "Auto Titan", "Auto Trial", "Auto Gate"}
 
 queueSection:Dropdown({
     Title = "Priority 1 (Highest)",
@@ -1308,6 +1384,40 @@ trialToggle = JoinSection:Toggle({
             WindUI:Notify({
                 Title = "Auto Trial",
                 Content = "Auto Trial Disabled!",
+                Icon = "x",
+                Duration = 3
+            })
+        end
+    end
+})
+
+-- Enable Auto Gate Toggle
+JoinSection:Toggle({
+    Title = "Auto Gate",
+    Desc = "Warp to World 5 (Gate) room and auto farm",
+    Value = autoGate,
+    Flag = "autoGate",
+    Callback = function(state)
+        autoGate = state
+        autofarm = state -- Sync with farm loop activation
+        
+        -- If disabled, unanchor character immediately
+        if not state and Character and Character:FindFirstChild("HumanoidRootPart") then
+            Character.HumanoidRootPart.Anchored = false
+        end
+        
+        if state then
+            warpToWorld("5") -- Fire warp immediately
+            WindUI:Notify({
+                Title = "Auto Gate",
+                Content = "Auto Gate & Farm Active!",
+                Icon = "check",
+                Duration = 3
+            })
+        else
+            WindUI:Notify({
+                Title = "Auto Gate",
+                Content = "Auto Gate Disabled!",
                 Icon = "x",
                 Duration = 3
             })
@@ -1629,6 +1739,16 @@ task.spawn(function()
     end
 end)
 
+-- 5b. Auto Gate Background Loop (Attempts to warp to World 5 every 3 seconds if not already in game)
+task.spawn(function()
+    while true do
+        task.wait(3)
+        if autoGate and not isPlayerInArena() then
+            warpToWorld("5")
+        end
+    end
+end)
+
 -- 6. World 4 Trial Room Creator Loop (Periodically creates room if not in arena)
 task.spawn(function()
     while true do
@@ -1708,6 +1828,7 @@ task.spawn(function()
                 autoTrial = false
                 autoTitanDefense = false
                 autoRaid = false
+                autoGate = false
                 autofarm = false
                 if Character and Character:FindFirstChild("HumanoidRootPart") then
                     Character.HumanoidRootPart.Anchored = false
@@ -1720,6 +1841,8 @@ task.spawn(function()
                     completedTaskName = "Auto Raid"
                 elseif lastArenaType == "Trial" then
                     completedTaskName = "Auto Trial"
+                elseif lastArenaType == "Gate" then
+                    completedTaskName = "Auto Gate"
                 end
                 
                 if completedTaskName then
@@ -1762,7 +1885,9 @@ task.spawn(function()
                 currentRunningTask = "Auto Raid"
             elseif currentArena == "Trial" then
                 currentRunningTask = "Auto Trial"
-            elseif currentArena == "None" and autofarm and not autoTitanDefense and not autoRaid and not autoTrial then
+            elseif currentArena == "Gate" then
+                currentRunningTask = "Auto Gate"
+            elseif currentArena == "None" and autofarm and not autoTitanDefense and not autoRaid and not autoTrial and not autoGate then
                 currentRunningTask = "Auto Farm"
             end
             
@@ -1791,26 +1916,37 @@ task.spawn(function()
                     autoTrial = true
                     autoTitanDefense = false
                     autoRaid = false
+                    autoGate = false
                     autofarm = true
                 elseif bestTask == "Auto Titan" then
                     autoTrial = false
                     autoTitanDefense = true
                     autoRaid = false
+                    autoGate = false
                     autofarm = true
                 elseif bestTask == "Auto Raid" then
                     autoTrial = false
                     autoTitanDefense = false
                     autoRaid = true
+                    autoGate = false
+                    autofarm = true
+                elseif bestTask == "Auto Gate" then
+                    autoTrial = false
+                    autoTitanDefense = false
+                    autoRaid = false
+                    autoGate = true
                     autofarm = true
                 elseif bestTask == "Auto Farm" then
                     autoTrial = false
                     autoTitanDefense = false
                     autoRaid = false
+                    autoGate = false
                     autofarm = true
                 elseif bestTask == "None" then
                     autoTrial = false
                     autoTitanDefense = false
                     autoRaid = false
+                    autoGate = false
                     autofarm = false
                 end
             end
@@ -1832,6 +1968,16 @@ task.spawn(function()
                 if not (worlds and worlds:FindFirstChild("1")) then
                     warpToWorld(1)
                 end
+            elseif autoGate or (autoTrial and not (worlds and worlds:FindFirstChild("5"))) then
+                if not (worlds and worlds:FindFirstChild("5")) then
+                    warpToWorld("5")
+                end
+            elseif not autoTitanDefense and not autoRaid and not autoTrial and not autoGate then
+                -- Normal auto farm: Warp to selected world if not there
+                local targetWorld = selectedWorld
+                if not (worlds and worlds:FindFirstChild(targetWorld)) then
+                    warpToWorld(targetWorld)
+                end
             end
         end
     end
@@ -1843,7 +1989,8 @@ task.spawn(function()
         task.wait()
         
         if autofarm and Character and Character:FindFirstChild("HumanoidRootPart") 
-            and Character:FindFirstChild("Humanoid") and Character.Humanoid.Health > 0 then
+            and Character:FindFirstChild("Humanoid") and Character.Humanoid.Health > 0 
+            and isReadyToFarm() then
             
             local targets = getTargetEnemies()
             local target = nil
@@ -1971,3 +2118,8 @@ WindUI:Notify({
     Icon = "bird",
     Duration = 5
 })
+
+-- Safeguard: Ensure the toggle button starts hidden since the UI is maximized on startup
+if Window.OpenButtonMain then
+    Window.OpenButtonMain:Visible(false)
+end
