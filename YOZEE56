@@ -869,6 +869,25 @@ local function leaveTrial()
 end
 
 
+-- Determine mobile / small-screen scaling dynamically
+local isMobile = game:GetService("UserInputService").TouchEnabled and not game:GetService("UserInputService").KeyboardEnabled
+local scale = 1.0
+local camera = workspace.CurrentCamera
+if camera then
+    local viewportSize = camera.ViewportSize
+    if isMobile or viewportSize.X < 800 or viewportSize.Y < 600 then
+        -- Calculate scale factor to make it fit nicely
+        local scaleX = (viewportSize.X * 0.9) / 580
+        local scaleY = (viewportSize.Y * 0.9) / 460
+        scale = math.min(scaleX, scaleY)
+        scale = math.clamp(scale, 0.65, 0.95)
+    end
+end
+WindUI.UIScale = scale
+if WindUI.UIScaleObj then
+    WindUI.UIScaleObj.Scale = scale
+end
+
 -- Main Window Creation (Title & Author: Anime Astral Simulator by YOZEE)
 local Window = WindUI:CreateWindow({
     Title = "Anime Astral Simulator",
@@ -880,6 +899,47 @@ local Window = WindUI:CreateWindow({
     Theme = "Amber",
     Transparent = true,
 })
+
+-- Hook Window:Tab to modify Section behavior (remove collapse/expand chevrons, make sections always open)
+local originalTab = Window.Tab
+Window.Tab = function(self, tabConfig)
+    local tab = originalTab(self, tabConfig)
+    
+    local originalSection = tab.Section
+    tab.Section = function(tabSelf, sectionConfig)
+        -- Force the section to start opened
+        sectionConfig.Opened = true
+        
+        local section = originalSection(tabSelf, sectionConfig)
+        
+        -- Override section.Close to be a no-op so clicking the header does not collapse it
+        section.Close = function() end
+        
+        -- Set IconSize to -8 so that UpdateTitleSize does not reserve space for the chevron
+        section.IconSize = -8
+        
+        -- Hide the chevron icon as soon as it becomes visible
+        task.spawn(function()
+            local topFrame = section.ElementFrame and section.ElementFrame:FindFirstChild("Top")
+            if topFrame then
+                local chevron = topFrame:FindFirstChildWhichIsA("Frame")
+                if chevron then
+                    chevron.Visible = false
+                    chevron:GetPropertyChangedSignal("Visible"):Connect(function()
+                        if chevron.Visible then
+                            chevron.Visible = false
+                        end
+                    end)
+                end
+            end
+        end)
+        
+        return section
+    end
+    
+    return tab
+end
+
 
 Window:EditOpenButton({
     Title = "Open Axel Hub",
